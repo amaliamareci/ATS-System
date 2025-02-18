@@ -1,0 +1,302 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="bg-white rounded-lg shadow-md p-6">
+    <div class="mb-6">
+        <h2 class="text-2xl font-bold text-gray-800">{% if form.instance.pk %}Edit{% else %}Add{% endif %} Candidate</h2>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="space-y-6">
+        {% csrf_token %}
+        
+        {% if form.errors %}
+        <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative" role="alert">
+            <strong class="font-bold">Please fix the following errors:</strong>
+            <ul class="mt-2 list-disc list-inside">
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <li>{{ field.label }}: {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <div class="grid grid-cols-2 gap-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                {{ form.first_name }}
+                {% if form.first_name.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ form.first_name.errors.0 }}</p>
+                {% endif %}
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                {{ form.last_name }}
+                {% if form.last_name.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ form.last_name.errors.0 }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                {{ form.email }}
+                {% if form.email.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ form.email.errors.0 }}</p>
+                {% endif %}
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                {{ form.phone }}
+                {% if form.phone.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ form.phone.errors.0 }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Position</label>
+                {{ form.positions }}
+                {% if form.positions.help_text %}
+                    <p class="mt-1 text-sm text-gray-500">{{ form.positions.help_text }}</p>
+                {% endif %}
+                {% if form.positions.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ form.positions.errors.0 }}</p>
+                {% endif %}
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Consultant</label>
+                {{ form.consultant }}
+                {% if form.consultant.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ form.consultant.errors.0 }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">CV Upload</label>
+            <div class="mt-1 flex items-center">
+                {% if form.instance.resume %}
+                    <div class="flex items-center space-x-2">
+                        <a href="{{ form.instance.resume.url }}" 
+                           target="_blank"
+                           class="inline-flex items-center px-3 py-1 rounded-md bg-blue-50 text-blue-700 hover:bg-blue-100">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                            </svg>
+                            Current CV
+                        </a>
+                        <label class="text-sm text-gray-500">Replace:</label>
+                    </div>
+                {% endif %}
+                {{ form.resume }}
+            </div>
+            {% if form.resume.help_text %}
+                <p class="mt-1 text-sm text-gray-500">{{ form.resume.help_text }}</p>
+            {% endif %}
+            {% if form.resume.errors %}
+                <p class="mt-1 text-sm text-red-600">{{ form.resume.errors.0 }}</p>
+            {% endif %}
+        </div>
+
+        <div class="grid grid-cols-2 gap-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                {{ form.status }}
+                {% if form.status.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ form.status.errors.0 }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Competencies -->
+        <div>
+            <div class="flex items-center justify-between mb-1">
+                <label for="id_competencies" class="block text-sm font-medium text-gray-700">Competencies</label>
+                <button type="button" 
+                        onclick="openModal('competencyModal')"
+                        class="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 rounded-md hover:bg-blue-100">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Add New
+                </button>
+            </div>
+            {{ form.competencies }}
+        </div>
+
+        <!-- Languages -->
+        <div>
+            <div class="flex items-center justify-between mb-1">
+                <label for="id_languages" class="block text-sm font-medium text-gray-700">Languages</label>
+                <button type="button" 
+                        onclick="openModal('languageModal')"
+                        class="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 rounded-md hover:bg-blue-100">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Add New
+                </button>
+            </div>
+            {{ form.languages }}
+        </div>
+
+        <div class="flex justify-end space-x-4">
+            <a href="{% url 'candidate_list' %}" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                Cancel
+            </a>
+            <button type="submit" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
+                Save
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Competency Modal -->
+<div id="competencyModal" class="fixed inset-0 bg-gray-500 bg-opacity-75 hidden">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div class="px-6 py-4 border-b">
+                <h3 class="text-lg font-medium text-gray-900">Add New Competency</h3>
+            </div>
+            <div class="px-6 py-4">
+                <input type="text" 
+                       id="newCompetencyInput"
+                       class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                       placeholder="Enter competency name">
+            </div>
+            <div class="px-6 py-4 bg-gray-50 flex justify-end space-x-3 rounded-b-lg">
+                <button type="button" 
+                        onclick="closeModal('competencyModal')"
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border rounded-md hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button type="button"
+                        onclick="addNewCompetency()"
+                        class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
+                    Add
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Language Modal -->
+<div id="languageModal" class="fixed inset-0 bg-gray-500 bg-opacity-75 hidden">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div class="px-6 py-4 border-b">
+                <h3 class="text-lg font-medium text-gray-900">Add New Language</h3>
+            </div>
+            <div class="px-6 py-4">
+                <input type="text" 
+                       id="newLanguageInput"
+                       class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                       placeholder="Enter language name">
+            </div>
+            <div class="px-6 py-4 bg-gray-50 flex justify-end space-x-3 rounded-b-lg">
+                <button type="button" 
+                        onclick="closeModal('languageModal')"
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border rounded-md hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button type="button"
+                        onclick="addNewLanguage()"
+                        class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
+                    Add
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    // Initialize Select2 for competencies
+    $('#id_competencies').select2({
+        placeholder: 'Search competencies...',
+        allowClear: true,
+        ajax: {
+            url: '{% url "search_competencies" %}',
+            dataType: 'json',
+            delay: 250,
+            data: function(params) {
+                return {
+                    q: params.term
+                };
+            },
+            processResults: function(data) {
+                return {
+                    results: data.results
+                };
+            },
+            cache: true
+        }
+    });
+
+    // Initialize Select2 for languages
+    $('#id_languages').select2({
+        placeholder: 'Search languages...',
+        allowClear: true,
+        ajax: {
+            url: '{% url "search_languages" %}',
+            dataType: 'json',
+            delay: 250,
+            data: function(params) {
+                return {
+                    q: params.term
+                };
+            },
+            processResults: function(data) {
+                return {
+                    results: data.results
+                };
+            },
+            cache: true
+        }
+    });
+});
+
+function openModal(modalId) {
+    document.getElementById(modalId).classList.remove('hidden');
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).classList.add('hidden');
+}
+
+function addNewCompetency() {
+    const name = document.getElementById('newCompetencyInput').value;
+    if (name) {
+        // Create new option with special "new:" prefix
+        const newOption = new Option(name, `new:${name}`, true, true);
+        $('#id_competencies').append(newOption).trigger('change');
+        
+        // Clear input and close modal
+        document.getElementById('newCompetencyInput').value = '';
+        closeModal('competencyModal');
+    }
+}
+
+function addNewLanguage() {
+    const name = document.getElementById('newLanguageInput').value;
+    if (name) {
+        // Create new option with special "new:" prefix
+        const newOption = new Option(name, `new:${name}`, true, true);
+        $('#id_languages').append(newOption).trigger('change');
+        
+        // Clear input and close modal
+        document.getElementById('newLanguageInput').value = '';
+        closeModal('languageModal');
+    }
+}
+</script>
+{% endblock %} 

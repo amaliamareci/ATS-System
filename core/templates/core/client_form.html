@@ -1,0 +1,37 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="bg-white rounded-lg shadow-md p-6">
+    <div class="mb-6">
+        <h2 class="text-2xl font-bold text-gray-800">{% if form.instance.pk %}Edit{% else %}Add{% endif %} Client</h2>
+    </div>
+
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Name</label>
+            {{ form.name }}
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Email</label>
+            {{ form.email }}
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Phone</label>
+            {{ form.phone }}
+        </div>
+
+        <div class="flex justify-end space-x-4">
+            <a href="{% url 'client_list' %}" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                Cancel
+            </a>
+            <button type="submit" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
+                Save
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %} 

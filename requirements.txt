@@ -1,0 +1,7 @@
+django>=4.2.0
+python-dotenv>=1.0.0
+openai>=1.0.0
+PyPDF2>=3.0.0
+python-docx>=0.8.11
+PyMuPDF>=1.21.0
+django-browser-reload>=1.12.0 

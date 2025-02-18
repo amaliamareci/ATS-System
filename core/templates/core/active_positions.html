@@ -1,0 +1,69 @@
+{% extends 'core/base.html' %}
+
+{% block header %}Active Positions{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold">Active Job Positions</h1>
+        <div class="flex items-center space-x-4">
+            <input type="text" placeholder="Search positions..." class="px-4 py-2 border rounded-lg">
+            <select class="px-4 py-2 border rounded-lg">
+                <option>Sort by: Newest</option>
+                <option>Sort by: Oldest</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="flex space-x-4 mb-6">
+        <button class="px-4 py-2 bg-blue-100 text-blue-700 rounded-full">All Positions ({{ total_open_positions }})</button>
+        <button class="px-4 py-2 hover:bg-gray-100 rounded-full">Active ({{ total_open_positions }})</button>
+        <button class="px-4 py-2 hover:bg-gray-100 rounded-full">On Hold (0)</button>
+        <button class="px-4 py-2 hover:bg-gray-100 rounded-full">Closed (0)</button>
+    </div>
+
+    {% for client in clients %}
+    <div class="mb-8">
+        <div class="flex items-center mb-4">
+            <h2 class="text-xl font-semibold">{{ client.name }}</h2>
+            <span class="ml-2 text-gray-500">{{ client.positions_count }} Active Positions</span>
+        </div>
+
+        <div class="space-y-4">
+            {% for position in client.active_positions %}
+            <div class="bg-white rounded-lg shadow p-4">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h3 class="font-medium">
+                            <a href="{% url 'position_recruiting_process' position.id %}" class="text-blue-600 hover:text-blue-800">
+                                {{ position.title }}
+                            </a>
+                        </h3>
+                        <div class="text-sm text-gray-500 mt-1">
+                            <span>{{ position.created_at|date:"d/m/Y" }}</span>
+                            <span class="mx-2">•</span>
+                            <span>{{ position.in_process_count }} Candidates</span>
+                            <span class="mx-2">•</span>
+                            <span>{{ position.hired_count }} Hired</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="px-2 py-1 text-sm rounded-full {% if position.status == 'open' %}bg-green-100 text-green-800{% endif %}">
+                            Active
+                        </span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+    // Preserve HTMX functionality
+    document.body.addEventListener('htmx:configRequest', (event) => {
+        event.detail.headers['X-CSRFToken'] = '{{ csrf_token }}';
+    });
+</script>
+{% endblock %} 

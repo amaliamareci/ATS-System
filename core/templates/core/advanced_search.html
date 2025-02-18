@@ -1,0 +1,269 @@
+{% extends 'core/base.html' %}
+
+{% block header %}Advanced Search{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Search Form -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <form method="GET" class="space-y-4">
+            <!-- Keyword Search -->
+            <div>
+                <label for="keywords" class="block text-sm font-medium text-gray-700">Keywords (Boolean Search)</label>
+                <div class="mt-1 relative">
+                    <input type="text" name="keywords" id="keywords" 
+                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                           placeholder="e.g. (Python OR Java) AND (AWS OR Azure)"
+                           value="{{ request.GET.keywords }}">
+                    <div class="mt-1 text-xs text-gray-500">
+                        Use AND, OR, NOT for boolean search. Use parentheses for grouping.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Skills Search -->
+            <div>
+                <label for="skills" class="block text-sm font-medium text-gray-700">Skills</label>
+                <div class="relative">
+                    <select name="skills" id="skills" multiple
+                            class="select2-skills w-full">
+                        {% for skill in all_skills %}
+                            <option value="{{ skill.id }}" {% if skill.id in selected_skills %}selected{% endif %}>
+                                {{ skill.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Experience Level -->
+            <div>
+                <label for="experience" class="block text-sm font-medium text-gray-700">Experience Level</label>
+                <select name="experience" id="experience" 
+                        class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                    <option value="">Any</option>
+                    <option value="junior" {% if request.GET.experience == 'junior' %}selected{% endif %}>Junior (0-2 years)</option>
+                    <option value="mid" {% if request.GET.experience == 'mid' %}selected{% endif %}>Mid-Level (3-5 years)</option>
+                    <option value="senior" {% if request.GET.experience == 'senior' %}selected{% endif %}>Senior (5+ years)</option>
+                </select>
+            </div>
+
+            <!-- Languages -->
+            <div>
+                <label for="languages" class="block text-sm font-medium text-gray-700">Languages</label>
+                <div class="relative">
+                    <select name="languages" id="languages" multiple
+                            class="select2-skills w-full">
+                        {% for language in all_languages %}
+                            <option value="{{ language.id }}" {% if language.id in selected_languages %}selected{% endif %}>
+                                {{ language.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Resume Content Search -->
+            <div>
+                <label for="resume_content" class="block text-sm font-medium text-gray-700">Resume Content</label>
+                <input type="text" name="resume_content" id="resume_content" 
+                       class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                       placeholder="Search within resume content"
+                       value="{{ request.GET.resume_content }}">
+            </div>
+
+            <div class="flex justify-end space-x-3">
+                <button type="reset" class="px-4 py-2 border rounded-lg hover:bg-gray-50">
+                    Clear
+                </button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    Search
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Search Results -->
+    {% if candidates %}
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Search Results ({{ candidates|length }})</h3>
+        </div>
+        <div class="divide-y divide-gray-200">
+            {% for candidate in candidates %}
+            <div class="p-6 hover:bg-gray-50">
+                <div class="flex items-center justify-between">
+                    <div class="w-full">
+                        <h4 class="text-lg font-medium text-gray-900">
+                            {{ candidate.first_name }} {{ candidate.last_name }}
+                        </h4>
+                        <div class="mt-2 flex flex-wrap gap-2">
+                            {% for competency in candidate.competencies.all %}
+                                <span class="candidate-tag">
+                                    <span class="remove-icon">×</span>
+                                    <span class="pr-2">{{ competency.name }}</span>
+                                </span>
+                            {% endfor %}
+                        </div>
+                        {% if candidate.match_score %}
+                        <p class="mt-3 text-sm text-gray-500">
+                            Match Score: <span class="font-medium text-green-600">{{ candidate.match_score }}%</span>
+                        </p>
+                        {% endif %}
+                        
+                        {% if candidate.resume and request.GET.resume_content %}
+                        <div class="mt-4">
+                            <div class="text-sm font-medium text-gray-700 mb-2">Resume Preview</div>
+                            <div class="border rounded-lg overflow-hidden">
+                                <iframe 
+                                    src="{% url 'preview_resume' candidate.id %}?highlight={{ request.GET.resume_content|urlencode }}" 
+                                    class="w-full h-96"
+                                    frameborder="0">
+                                </iframe>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="ml-4 flex-shrink-0">
+                        <a href="{% url 'candidate_edit' candidate.id %}" 
+                           class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                            View Profile
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% elif request.GET %}
+    <div class="bg-white rounded-lg shadow p-6 text-center text-gray-500">
+        No candidates found matching your search criteria.
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    /* Select2 container styling */
+    .select2-container {
+        width: 100% !important;
+    }
+
+    .select2-container--custom .select2-selection--multiple {
+        border: 1px solid #e2e8f0;
+        border-radius: 0.5rem;
+        min-height: 42px;
+        padding: 4px;
+        background-color: white;
+        outline: none !important;
+        box-shadow: none !important;
+    }
+
+    /* Selection area */
+    .select2-container--custom .select2-selection__rendered {
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        padding: 0;
+        margin: 0;
+    }
+
+    /* Individual tag styling */
+    .select2-container--custom .select2-selection__choice {
+        background-color: #eef3ff !important;
+        border: none !important;
+        border-radius: 4px;
+        margin: 0 !important;
+        padding: 2px 8px !important;
+        display: inline-flex !important;
+        align-items: center;
+        gap: 4px;
+        color: #3b82f6;
+        font-size: 0.875rem;
+        font-weight: 500;
+        order: 0;
+    }
+
+    /* Remove button */
+    .select2-container--custom .select2-selection__choice__remove {
+        color: #3b82f6 !important;
+        margin-right: 0 !important;
+        border: none !important;
+        background: none !important;
+        padding: 0 !important;
+        order: -1;
+    }
+
+    .select2-container--custom .select2-selection__choice__remove:hover {
+        background: none !important;
+        color: #1d4ed8 !important;
+    }
+
+    /* Search field */
+    .select2-container--custom .select2-search--inline {
+        margin: 0;
+        order: 999;
+    }
+
+    .select2-container--custom .select2-search__field {
+        margin: 0 !important;
+        padding: 0 6px !important;
+        height: 24px;
+        border: none !important;
+        outline: none !important;
+        box-shadow: none !important;
+    }
+
+    .select2-container--custom.select2-container--focus .select2-selection--multiple {
+        border-color: #e2e8f0 !important;
+        outline: none !important;
+        box-shadow: none !important;
+    }
+
+    /* Results tags styling */
+    .candidate-tag {
+        display: inline-flex;
+        align-items: center;
+        background-color: #eef3ff;
+        border-radius: 4px;
+        padding: 2px 8px;
+        margin-right: 4px;
+        color: #3b82f6;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+
+    .candidate-tag .remove-icon {
+        margin-right: 4px;
+        color: #3b82f6;
+    }
+
+    /* Dropdown styling */
+    .select2-container--custom .select2-dropdown {
+        border-color: #e2e8f0;
+        border-radius: 0.5rem;
+        margin-top: 4px;
+    }
+
+    .select2-container--custom .select2-results__option {
+        padding: 8px 12px;
+    }
+
+    .select2-container--custom .select2-results__option--highlighted {
+        background-color: #eef3ff !important;
+        color: #3b82f6 !important;
+    }
+</style>
+
+<script>
+    $(document).ready(function() {
+        $('.select2-skills, #languages').select2({
+            theme: 'custom',
+            tags: true,
+            tokenSeparators: [',', ' '],
+            placeholder: 'Select or type to add',
+            width: '100%',
+            selectionCssClass: 'select2-selection--custom'
+        });
+    });
+</script>
+{% endblock %} 

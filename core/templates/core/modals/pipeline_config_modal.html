@@ -1,0 +1,281 @@
+<!-- Pipeline Configuration Modal -->
+<div id="pipelineConfigModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-[800px] shadow-lg rounded-md bg-white">
+        <div class="flex justify-between items-start mb-6">
+            <h3 class="text-lg font-medium text-gray-900">Configure Hiring Pipeline</h3>
+            <button onclick="closePipelineConfigModal()" class="text-gray-400 hover:text-gray-500">
+                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <div class="space-y-4">
+            <div class="flex justify-between items-center">
+                <h4 class="text-sm font-medium text-gray-700">Pipeline Stages</h4>
+                <button onclick="addNewStage()" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-700">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add Stage
+                </button>
+            </div>
+
+            <div id="pipelineStages" class="space-y-4">
+                <!-- Pipeline stages will be added here -->
+            </div>
+
+            <div class="flex justify-end space-x-3 mt-6">
+                <button onclick="closePipelineConfigModal()" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button onclick="savePipelineConfig()" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
+                    Save Pipeline
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function openPipelineConfigModal() {
+    document.getElementById('pipelineConfigModal').classList.remove('hidden');
+    loadDefaultPipeline();
+}
+
+function closePipelineConfigModal() {
+    document.getElementById('pipelineConfigModal').classList.add('hidden');
+}
+
+function loadDefaultPipeline() {
+    const defaultPipeline = [
+        {
+            key: 'pending_screening',
+            name: 'Pending Screening',
+            order: 1,
+            color: '#6B7280',
+            sub_statuses: [
+                { key: 'screening_not_created', name: 'Screening Not Created', order: 1 },
+                { key: 'screening_created', name: 'Screening Created', order: 2 }
+            ]
+        },
+        {
+            key: 'screening',
+            name: 'Screening',
+            order: 2,
+            color: '#3B82F6',
+            sub_statuses: [
+                { key: 'unscreened', name: 'Unscreened', order: 1 },
+                { key: 'screening_scheduled', name: 'Screening Scheduled', order: 2 },
+                { key: 'can_be_sent', name: 'Can be sent to client', order: 3 },
+                { key: 'rejected', name: 'Rejected', order: 4 },
+                { key: 'junk_candidate', name: 'Junk candidate', order: 5 },
+                { key: 'absent', name: 'Absent', order: 6 },
+                { key: 'on_hold', name: 'On Hold', order: 7 }
+            ]
+        },
+        {
+            key: 'validation',
+            name: 'Validation at Client',
+            order: 3,
+            color: '#8B5CF6',
+            sub_statuses: [
+                { key: 'under_review', name: 'Under Review', order: 1 },
+                { key: 'approved_by_client', name: 'Approved by client', order: 2 },
+                { key: 'rejected_by_client', name: 'Rejected by client', order: 3 }
+            ]
+        },
+        {
+            key: 'client_interview',
+            name: 'Client Interview',
+            order: 4,
+            color: '#F59E0B',
+            sub_statuses: [
+                { key: 'to_be_scheduled', name: 'To be scheduled', order: 1 },
+                { key: 'interview_scheduled', name: 'Interview Scheduled', order: 2 },
+                { key: 'approved_by_client', name: 'Approved by client', order: 3 },
+                { key: 'rejected_by_client', name: 'Rejected by client', order: 4 }
+            ]
+        },
+        {
+            key: 'offered',
+            name: 'Offered',
+            order: 5,
+            color: '#10B981',
+            sub_statuses: [
+                { key: 'offer_made', name: 'Offer made', order: 1 },
+                { key: 'offer_accepted', name: 'Offer accepted', order: 2 },
+                { key: 'offer_declined', name: 'Offer declined', order: 3 }
+            ]
+        },
+        {
+            key: 'rejected',
+            name: 'Rejected',
+            order: 6,
+            color: '#EF4444',
+            sub_statuses: [
+                { key: 'rejected_screening', name: 'Rejected from Screening', order: 1 },
+                { key: 'junk_screening', name: 'Junk candidate from Screening', order: 2 },
+                { key: 'rejected_validation', name: 'Rejected by client from Validation', order: 3 },
+                { key: 'rejected_interview', name: 'Rejected by client from Interview', order: 4 },
+                { key: 'offer_declined', name: 'Offer declined', order: 5 }
+            ]
+        }
+    ];
+    
+    renderPipelineStages(defaultPipeline);
+}
+
+function renderPipelineStages(stages) {
+    const container = document.getElementById('pipelineStages');
+    if (stages.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-8 text-gray-500">
+                <p>No stages configured yet. Click "Add Stage" to start building your pipeline.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = stages.map((stage, index) => `
+        <div class="pipeline-stage bg-white rounded-lg border border-gray-200 mb-4" data-stage-index="${index}">
+            <div class="p-4 border-b border-gray-200">
+                <div class="flex items-center space-x-4">
+                    <span class="drag-handle text-gray-400 cursor-move">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16" />
+                        </svg>
+                    </span>
+                    <div class="flex-1 flex items-center">
+                        <input type="text" 
+                               class="flex-1 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-lg"
+                               value="${stage.name}" 
+                               placeholder="Stage Name">
+                        <button onclick="removeStage(${index})" 
+                                class="ml-2 text-gray-400 hover:text-red-600 p-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </button>
+                    </div>
+                    <input type="color" 
+                           class="w-8 h-8 rounded cursor-pointer border border-gray-200" 
+                           value="${stage.color}">
+                </div>
+            </div>
+            
+            <div class="p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <h4 class="text-sm font-medium text-gray-700">Sub-statuses</h4>
+                    <button onclick="addSubStatus(${index})" 
+                            class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                        Add
+                    </button>
+                </div>
+                <div class="space-y-2">
+                    ${stage.sub_statuses.map((subStatus, subIndex) => `
+                        <div class="sub-status-item flex items-center space-x-3 py-2 px-3 hover:bg-gray-50 rounded-md">
+                            <span class="drag-handle text-gray-400 cursor-move">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16" />
+                                </svg>
+                            </span>
+                            <div class="flex-1 flex items-center">
+                                <input type="text" 
+                                       class="flex-1 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                       value="${subStatus.name}" 
+                                       placeholder="Sub-status Name">
+                                <button onclick="removeSubStatus(${index}, ${subIndex})" 
+                                        class="ml-2 text-gray-400 hover:text-red-600 p-2">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        </div>
+    `).join('');
+
+    // Initialize drag and drop functionality
+    initializeDragAndDrop();
+}
+
+function addNewStage() {
+    const newStage = {
+        key: 'new_stage_' + Date.now(),
+        name: '',
+        color: '#6B7280',
+        sub_statuses: []
+    };
+
+    const stages = getCurrentPipelineConfig();
+    stages.push(newStage);
+    renderPipelineStages(stages);
+}
+
+function removeStage(index) {
+    const stages = getCurrentPipelineConfig();
+    stages.splice(index, 1);
+    renderPipelineStages(stages);
+}
+
+function addSubStatus(stageIndex) {
+    const stages = getCurrentPipelineConfig();
+    stages[stageIndex].sub_statuses.push({
+        key: 'new_sub_status_' + Date.now(),
+        name: ''
+    });
+    renderPipelineStages(stages);
+}
+
+function removeSubStatus(stageIndex, subStatusIndex) {
+    const stages = getCurrentPipelineConfig();
+    stages[stageIndex].sub_statuses.splice(subStatusIndex, 1);
+    renderPipelineStages(stages);
+}
+
+function getCurrentPipelineConfig() {
+    const stages = [];
+    document.querySelectorAll('.pipeline-stage').forEach(stageEl => {
+        const stageIndex = parseInt(stageEl.dataset.stageIndex);
+        const stageName = stageEl.querySelector('input[type="text"]').value;
+        const stageColor = stageEl.querySelector('input[type="color"]').value;
+        
+        const subStatuses = [];
+        stageEl.querySelectorAll('.sub-status-item input[type="text"]').forEach(input => {
+            subStatuses.push({
+                key: 'sub_status_' + Date.now() + '_' + subStatuses.length,
+                name: input.value
+            });
+        });
+
+        stages[stageIndex] = {
+            key: 'stage_' + Date.now() + '_' + stageIndex,
+            name: stageName,
+            color: stageColor,
+            sub_statuses: subStatuses
+        };
+    });
+
+    return stages;
+}
+
+function initializeDragAndDrop() {
+    // Add drag and drop functionality for stages and sub-statuses
+    // This can be implemented using a library like SortableJS
+}
+
+function savePipelineConfig() {
+    const pipelineConfig = getCurrentPipelineConfig();
+    
+    // Call the callback function to update the parent modal
+    if (typeof onPipelineConfigSaved === 'function') {
+        onPipelineConfigSaved(pipelineConfig);
+    }
+    
+    closePipelineConfigModal();
+}
+</script> 

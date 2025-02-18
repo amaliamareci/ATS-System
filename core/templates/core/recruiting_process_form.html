@@ -1,0 +1,83 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-2xl mx-auto">
+        <h1 class="text-2xl font-bold text-gray-900 mb-6">{{ title|default:"Recruiting Process" }}</h1>
+        
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            {{ form.non_field_errors }}
+            
+            <div>
+                {{ form.position.label_tag }}
+                {{ form.position }}
+                {{ form.position.errors }}
+            </div>
+            
+            <div>
+                {{ form.candidate.label_tag }}
+                {{ form.candidate }}
+                {{ form.candidate.errors }}
+            </div>
+            
+            <div>
+                {{ form.stage.label_tag }}
+                {{ form.stage }}
+                {{ form.stage.errors }}
+            </div>
+            
+            <div>
+                {{ form.sub_status.label_tag }}
+                {{ form.sub_status }}
+                {{ form.sub_status.errors }}
+            </div>
+            
+            <div class="flex justify-end space-x-3">
+                <a href="{% url 'recruiting_process_list' %}" 
+                   class="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50">
+                    Cancel
+                </a>
+                <button type="submit" 
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    Save Process
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.getElementById('id_position').addEventListener('change', function() {
+    const positionId = this.value;
+    if (positionId) {
+        fetch(`/api/positions/${positionId}/stages/`)
+            .then(response => response.json())
+            .then(data => {
+                const stageSelect = document.getElementById('id_stage');
+                stageSelect.innerHTML = '<option value="">---------</option>';
+                data.stages.forEach(stage => {
+                    stageSelect.innerHTML += `<option value="${stage.id}">${stage.name}</option>`;
+                });
+                // Clear sub-status when stage changes
+                document.getElementById('id_sub_status').innerHTML = '<option value="">---------</option>';
+            });
+    }
+});
+
+document.getElementById('id_stage').addEventListener('change', function() {
+    const stageId = this.value;
+    if (stageId) {
+        fetch(`/api/stages/${stageId}/sub-statuses/`)
+            .then(response => response.json())
+            .then(data => {
+                const subStatusSelect = document.getElementById('id_sub_status');
+                subStatusSelect.innerHTML = '<option value="">---------</option>';
+                data.sub_statuses.forEach(subStatus => {
+                    subStatusSelect.innerHTML += `<option value="${subStatus.id}">${subStatus.name}</option>`;
+                });
+            });
+    }
+});
+</script>
+{% endblock %} 

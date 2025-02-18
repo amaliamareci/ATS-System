@@ -1,0 +1,431 @@
+{% extends 'core/base.html' %}
+
+{% block header %}Candidates{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Stats Section -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white rounded-xl shadow-sm p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-primary-50 text-primary-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <h2 class="text-sm font-medium text-gray-500">Total Candidates</h2>
+                    <p class="text-2xl font-semibold text-gray-900">{{ candidates.count }}</p>
+                </div>
+            </div>
+        </div>
+        <!-- Add more stat cards as needed -->
+    </div>
+
+    <!-- Main Content Card -->
+    <div class="bg-white rounded-xl shadow-sm">
+        <!-- Header -->
+        <div class="px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <h2 class="text-lg font-medium text-gray-900">Candidates</h2>
+                <div class="flex gap-3">
+                    <button onclick="openCVModal()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Add CV
+                    </button>
+                    <a href="{% url 'candidate_create' %}" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        Add Candidate
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="px-6 py-4 border-b border-gray-200">
+            <div class="max-w-xl">
+                <div class="relative">
+                    <input type="text" 
+                           id="candidateSearch" 
+                           placeholder="Search candidates by name, email, consultant, status..." 
+                           class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                    >
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Consultant</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CV</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 bg-white">
+                    {% for candidate in candidates %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">
+                                {{ candidate.first_name }} {{ candidate.last_name }}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-500">{{ candidate.email }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">
+                                {% if candidate.consultant %}
+                                    {{ candidate.consultant.first_name }} {{ candidate.consultant.last_name }}
+                                {% else %}
+                                    Unassigned
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                {{ candidate.status }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if candidate.resume %}
+                                <a href="{{ candidate.resume.url }}" 
+                                   target="_blank"
+                                   class="inline-flex items-center px-3 py-1 rounded-md bg-blue-50 text-blue-700 hover:bg-blue-100">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                              d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                                    </svg>
+                                    View CV
+                                </a>
+                            {% else %}
+                                <span class="text-gray-400 text-sm">No CV</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div class="flex space-x-3">
+                                <a href="{% url 'candidate_edit' candidate.pk %}" class="text-indigo-600 hover:text-indigo-900">Edit</a>
+                                <button onclick="openDeleteModal({{ candidate.pk }}, '{{ candidate.first_name }} {{ candidate.last_name }}')" 
+                                        class="text-red-600 hover:text-red-900">Delete</button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination if needed -->
+        <div class="px-6 py-4 border-t border-gray-200">
+            <!-- Add pagination here -->
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-medium text-gray-900">Delete Candidate</h3>
+                <button onclick="closeDeleteModal()" class="text-gray-400 hover:text-gray-500">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="mt-4">
+                <p class="text-gray-600">Are you sure you want to delete <span id="candidateName" class="font-medium"></span>? This action cannot be undone.</p>
+            </div>
+            <div class="mt-4 flex justify-end space-x-3">
+                <button onclick="closeDeleteModal()" 
+                        class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                    Cancel
+                </button>
+                <button onclick="deleteCandidate()" 
+                        id="confirmDeleteButton"
+                        class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">
+                    Delete
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CV Upload Modal -->
+<div id="cvModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-medium text-gray-900">Upload CV</h3>
+                <button onclick="closeCVModal()" class="text-gray-400 hover:text-gray-500">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <form id="cvUploadForm" class="mt-4" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="mt-4">
+                    <div class="flex justify-center items-center w-full">
+                        <label class="flex flex-col w-full h-32 border-4 border-dashed hover:bg-gray-100 hover:border-gray-300">
+                            <div id="dropzone" class="flex flex-col items-center justify-center pt-7">
+                                <svg class="w-8 h-8 text-gray-400 group-hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                </svg>
+                                <p id="dropText" class="pt-1 text-sm tracking-wider text-gray-400 group-hover:text-gray-600">
+                                    Drop your CV here or click to upload
+                                </p>
+                                <p id="selectedFile" class="pt-1 text-sm text-blue-600 hidden"></p>
+                            </div>
+                            <input type="file" id="cv_file" name="cv_file" class="opacity-0" accept=".pdf,.doc,.docx" />
+                        </label>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <button type="submit" id="submitButton" class="w-full inline-flex justify-center items-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <span id="buttonText">Upload and Parse</span>
+                        <div id="loadingSpinner" class="hidden ml-2">
+                            <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </div>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    let isSubmitting = false;
+
+    function openCVModal() {
+        document.getElementById('cvModal').classList.remove('hidden');
+        // Reset the form and file display when opening modal
+        document.getElementById('cvUploadForm').reset();
+        document.getElementById('dropText').textContent = 'Drop your CV here or click to upload';
+        document.getElementById('selectedFile').classList.add('hidden');
+        document.getElementById('selectedFile').textContent = '';
+        resetSubmitButton();
+    }
+
+    function closeCVModal() {
+        if (!isSubmitting) {
+            document.getElementById('cvModal').classList.add('hidden');
+        }
+    }
+
+    function setLoading(loading) {
+        isSubmitting = loading;
+        const submitButton = document.getElementById('submitButton');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const buttonText = document.getElementById('buttonText');
+
+        if (loading) {
+            submitButton.disabled = true;
+            submitButton.classList.add('opacity-75', 'cursor-not-allowed');
+            loadingSpinner.classList.remove('hidden');
+            buttonText.textContent = 'Processing...';
+        } else {
+            submitButton.disabled = false;
+            submitButton.classList.remove('opacity-75', 'cursor-not-allowed');
+            loadingSpinner.classList.add('hidden');
+            buttonText.textContent = 'Upload and Parse';
+        }
+    }
+
+    function resetSubmitButton() {
+        setLoading(false);
+    }
+
+    // Handle file selection
+    const fileInput = document.getElementById('cv_file');
+    const dropText = document.getElementById('dropText');
+    const selectedFile = document.getElementById('selectedFile');
+
+    fileInput.addEventListener('change', function(e) {
+        handleFiles(this.files);
+    });
+
+    function handleFiles(files) {
+        if (files.length > 0) {
+            const file = files[0]; // Only take the first file
+            if (validateFile(file)) {
+                dropText.textContent = 'Selected file:';
+                selectedFile.textContent = file.name;
+                selectedFile.classList.remove('hidden');
+            } else {
+                fileInput.value = ''; // Clear the input
+                dropText.textContent = 'Please select a valid PDF, DOC, or DOCX file';
+                selectedFile.classList.add('hidden');
+            }
+        }
+    }
+
+    function validateFile(file) {
+        const validTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+        if (!validTypes.includes(file.type)) {
+            alert('Please upload a PDF, DOC, or DOCX file');
+            return false;
+        }
+        if (file.size > 10 * 1024 * 1024) { // 10MB limit
+            alert('File size must be less than 10MB');
+            return false;
+        }
+        return true;
+    }
+
+    // Handle drag and drop
+    const dropzone = document.getElementById('dropzone');
+
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropzone.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropzone.addEventListener(eventName, highlight, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropzone.addEventListener(eventName, unhighlight, false);
+    });
+
+    function highlight(e) {
+        dropzone.classList.add('bg-gray-100', 'border-gray-300');
+    }
+
+    function unhighlight(e) {
+        dropzone.classList.remove('bg-gray-100', 'border-gray-300');
+    }
+
+    dropzone.addEventListener('drop', handleDrop, false);
+
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        handleFiles(files);
+        fileInput.files = files;
+    }
+
+    // Handle form submission
+    document.getElementById('cvUploadForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        if (isSubmitting) {
+            return; // Prevent multiple submissions
+        }
+        
+        if (!fileInput.files || fileInput.files.length === 0) {
+            alert('Please select a file first');
+            return;
+        }
+
+        setLoading(true);
+        const formData = new FormData();
+        formData.append('cv_file', fileInput.files[0]);
+        
+        try {
+            const response = await fetch('{% url "parse_cv" %}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            });
+            
+            const data = await response.json();
+            if (data.success) {
+                window.location.href = data.redirect_url;
+            } else {
+                alert('Error parsing CV: ' + data.error);
+                setLoading(false);
+            }
+        } catch (error) {
+            alert('Error uploading file: ' + error);
+            setLoading(false);
+        }
+    });
+
+    // Delete candidate functionality
+    let candidateToDelete = null;
+
+    function openDeleteModal(candidateId, candidateName) {
+        candidateToDelete = candidateId;
+        document.getElementById('candidateName').textContent = candidateName;
+        document.getElementById('deleteModal').classList.remove('hidden');
+    }
+
+    function closeDeleteModal() {
+        document.getElementById('deleteModal').classList.add('hidden');
+        candidateToDelete = null;
+    }
+
+    async function deleteCandidate() {
+        if (!candidateToDelete) return;
+
+        const confirmButton = document.getElementById('confirmDeleteButton');
+        const originalText = confirmButton.textContent;
+        
+        try {
+            confirmButton.textContent = 'Deleting...';
+            confirmButton.disabled = true;
+
+            const response = await fetch(`/candidate/${candidateToDelete}/delete/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert('Error deleting candidate: ' + (data.error || 'Unknown error'));
+                confirmButton.textContent = originalText;
+                confirmButton.disabled = false;
+            }
+        } catch (error) {
+            alert('Error deleting candidate: ' + error);
+            confirmButton.textContent = originalText;
+            confirmButton.disabled = false;
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('candidateSearch');
+        
+        searchInput.addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const rows = document.querySelectorAll('tbody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                const shouldShow = text.includes(searchTerm);
+                row.style.display = shouldShow ? '' : 'none';
+            });
+        });
+    });
+</script>
+{% endblock %} 

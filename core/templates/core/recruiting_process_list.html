@@ -1,0 +1,41 @@
+{% extends 'core/base.html' %}
+{% load core_extras %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold">Recruiting Processes</h1>
+        <a href="{% url 'recruiting_process_create' %}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+            Add Process
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for stage_key, processes in processes_by_stage.items %}
+        <div class="bg-white rounded-lg shadow p-4">
+            <h2 class="text-lg font-semibold mb-4">{{ stage_names|get_item:stage_key }} ({{ processes|length }})</h2>
+            <div class="space-y-4">
+                {% for process in processes %}
+                <div class="border rounded p-4 hover:bg-gray-50">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="font-medium">{{ process.candidate.first_name }} {{ process.candidate.last_name }}</h3>
+                            <p class="text-sm text-gray-600">{{ process.position.title }}</p>
+                            <p class="text-xs text-gray-500">{{ process.sub_status.name }}</p>
+                        </div>
+                        <div class="flex space-x-2">
+                            <a href="{% url 'recruiting_process_edit' process.id %}" class="text-blue-500 hover:text-blue-700">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-gray-500 text-sm">No processes in this stage</p>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %} 

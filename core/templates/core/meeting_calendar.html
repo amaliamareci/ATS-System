@@ -1,0 +1,192 @@
+{% extends 'core/base.html' %}
+{% load meeting_tags %}
+
+{% block content %}
+<div class="bg-white rounded-lg shadow-md p-6">
+    <div class="flex justify-between items-center mb-6">
+        <div class="flex items-center space-x-4">
+            <h2 class="text-2xl font-bold text-gray-800">Meetings Calendar</h2>
+            <div class="flex items-center space-x-2">
+                <a href="?year={{ prev_month|slice:':4' }}&month={{ prev_month|slice:'5:7' }}&recruiter={{ selected_recruiter_id }}" 
+                   class="p-1 hover:bg-gray-100 rounded">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                </a>
+                <span class="text-lg font-medium">{{ month_name }} {{ year }}</span>
+                <a href="?year={{ next_month|slice:':4' }}&month={{ next_month|slice:'5:7' }}&recruiter={{ selected_recruiter_id }}"
+                   class="p-1 hover:bg-gray-100 rounded">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </a>
+            </div>
+        </div>
+        <div class="flex items-center space-x-4">
+            <select id="recruiter-filter" class="form-select rounded-md border-gray-300"
+                    onchange="window.location.href='?recruiter=' + this.value">
+                <option value="all" {% if selected_recruiter_id == 'all' %}selected{% endif %}>All meetings</option>
+                {% for recruiter in recruiters %}
+                <option value="{{ recruiter.id }}" 
+                        {% if selected_recruiter_id == recruiter.id|stringformat:"s" %}selected{% endif %}>
+                    {{ recruiter.first_name }} {{ recruiter.last_name }}
+                </option>
+                {% endfor %}
+            </select>
+            <a href="{% url 'meeting_create' %}" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+                Add Meeting
+            </a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-7 gap-px bg-gray-200 rounded-lg overflow-hidden">
+        <!-- Calendar header -->
+        <div class="bg-gray-50 p-2 text-center font-medium">Sun</div>
+        <div class="bg-gray-50 p-2 text-center font-medium">Mon</div>
+        <div class="bg-gray-50 p-2 text-center font-medium">Tue</div>
+        <div class="bg-gray-50 p-2 text-center font-medium">Wed</div>
+        <div class="bg-gray-50 p-2 text-center font-medium">Thu</div>
+        <div class="bg-gray-50 p-2 text-center font-medium">Fri</div>
+        <div class="bg-gray-50 p-2 text-center font-medium">Sat</div>
+
+        <!-- Calendar days -->
+        {% for day in days %}
+        <div class="relative bg-white group min-h-[120px] max-h-[120px]">
+            <div class="px-2 py-1 text-sm {% if day == today %}bg-blue-50 font-semibold text-blue-600{% endif %}">
+                {{ day|date:"j" }}
+            </div>
+            {% if day in meetings_by_date %}
+            <div class="px-1 overflow-y-auto max-h-[85px] scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                {% for meeting in meetings_by_date|get_item:day %}
+                <div class="p-1">
+                    <div class="rounded px-2 py-1 text-xs meeting-card-{% cycle '0' '1' '2' '3' '4' '5' %} cursor-pointer hover:opacity-90"
+                         onclick="openMeetingModal('{{ meeting.date_time|date:"H:i" }}', '{{ meeting.recruiting_process.position.title }}', '{{ meeting.recruiting_process.candidate.first_name }} {{ meeting.recruiting_process.candidate.last_name }}', '{{ meeting.get_meeting_type_display }}', '{{ meeting.recruiter.first_name }} {{ meeting.recruiter.last_name }}', '{{ meeting.notes|default:'' }}')">
+                        <div class="font-medium">{{ meeting.date_time|date:"H:i" }}</div>
+                        <div class="truncate">{{ meeting.recruiting_process.position.title }}</div>
+                        <div class="truncate opacity-75">{{ meeting.recruiting_process.candidate.first_name }} {{ meeting.recruiting_process.candidate.last_name }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Meeting Details Modal -->
+<div id="meetingModal" class="fixed inset-0 bg-gray-500 bg-opacity-75 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-medium text-gray-900" id="modalTime"></h3>
+                    <button onclick="closeMeetingModal()" class="text-gray-400 hover:text-gray-500">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Position</label>
+                    <div class="mt-1 text-sm text-gray-900" id="modalPosition"></div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Candidate</label>
+                    <div class="mt-1 text-sm text-gray-900" id="modalCandidate"></div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Meeting Type</label>
+                    <div class="mt-1 text-sm text-gray-900" id="modalType"></div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Recruiter</label>
+                    <div class="mt-1 text-sm text-gray-900" id="modalRecruiter"></div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Notes</label>
+                    <div class="mt-1 text-sm text-gray-900" id="modalNotes"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Custom scrollbar styling */
+    .scrollbar-thin::-webkit-scrollbar {
+        width: 4px;
+    }
+    
+    .scrollbar-thin::-webkit-scrollbar-track {
+        background: #f3f4f6;
+        border-radius: 2px;
+    }
+    
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+        background: #d1d5db;
+        border-radius: 2px;
+    }
+    
+    .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+        background: #9ca3af;
+    }
+
+    /* Meeting card colors */
+    .meeting-card-0 {
+        background-color: #EFF6FF !important;
+        color: #1D4ED8 !important;
+    }
+
+    .meeting-card-1 {
+        background-color: #F0FDF4 !important;
+        color: #15803D !important;
+    }
+
+    .meeting-card-2 {
+        background-color: #FDF2F8 !important;
+        color: #BE185D !important;
+    }
+
+    .meeting-card-3 {
+        background-color: #FFFBEB !important;
+        color: #B45309 !important;
+    }
+
+    .meeting-card-4 {
+        background-color: #F3E8FF !important;
+        color: #7E22CE !important;
+    }
+
+    .meeting-card-5 {
+        background-color: #ECFEFF !important;
+        color: #0E7490 !important;
+    }
+</style>
+
+<script>
+function openMeetingModal(time, position, candidate, type, recruiter, notes) {
+    document.getElementById('modalTime').textContent = time;
+    document.getElementById('modalPosition').textContent = position;
+    document.getElementById('modalCandidate').textContent = candidate;
+    document.getElementById('modalType').textContent = type;
+    document.getElementById('modalRecruiter').textContent = recruiter;
+    document.getElementById('modalNotes').textContent = notes || 'No notes';
+    document.getElementById('meetingModal').classList.remove('hidden');
+}
+
+function closeMeetingModal() {
+    document.getElementById('meetingModal').classList.add('hidden');
+}
+
+// Close modal when clicking outside
+document.getElementById('meetingModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeMeetingModal();
+    }
+});
+</script>
+{% endblock %} 

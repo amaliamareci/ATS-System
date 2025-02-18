@@ -1,0 +1,177 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block full_width %}
+<div class="flex h-screen">
+    <!-- Sidebar -->
+    <div class="bg-white w-64 shadow-lg">
+        <div class="p-4">
+            <h1 class="text-2xl font-bold text-gray-800">ATS System</h1>
+        </div>
+        <nav class="mt-4">
+            <a href="{% url 'candidate_list' %}" class="block px-4 py-2 text-gray-600 hover:bg-gray-100 hover:text-gray-800">
+                <span class="ml-2">Candidates</span>
+            </a>
+            <!-- ... rest of navigation ... -->
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 overflow-auto bg-gray-50">
+        <div class="p-8">
+            <!-- Back button -->
+            <div class="mb-8">
+                <a href="{% url 'position_recruiting_process' position.id %}"
+                   class="flex items-center gap-2 bg-white rounded-lg px-4 py-2 shadow-sm hover:shadow-md transition-shadow">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                    </svg>
+                    <span>Back to position</span>
+                </a>
+            </div>
+
+            <!-- Main content -->
+            <div class="bg-white rounded-xl shadow-sm p-8">
+                <div class="mb-8">
+                    <h1 class="text-3xl font-bold text-gray-900 mb-2">Add Candidate to Position</h1>
+                    <p class="text-gray-500">Current Position: {{ position.title }}</p>
+                </div>
+
+                <form method="post" class="space-y-6">
+                    {% csrf_token %}
+                    
+                    <!-- Position Selection -->
+                    <div>
+                        <label for="id_position" class="block text-sm font-medium text-gray-700 mb-1">Position *</label>
+                        {{ form.position }}
+                        {% if form.position.errors %}
+                            <p class="text-red-500 text-xs mt-1">{{ form.position.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Candidate Selection -->
+                    <div>
+                        <label for="id_candidate" class="block text-sm font-medium text-gray-700 mb-1">Candidate *</label>
+                        {{ form.candidate }}
+                        {% if form.candidate.errors %}
+                            <p class="text-red-500 text-xs mt-1">{{ form.candidate.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Competencies -->
+                    <div>
+                        <label for="id_competencies" class="block text-sm font-medium text-gray-700 mb-1">Competencies</label>
+                        {{ form.competencies }}
+                        <div class="mt-2">
+                            {{ form.new_competency }}
+                        </div>
+                    </div>
+
+                    <!-- Languages -->
+                    <div>
+                        <label for="id_languages" class="block text-sm font-medium text-gray-700 mb-1">Languages</label>
+                        {{ form.languages }}
+                        <div class="mt-2">
+                            {{ form.new_language }}
+                        </div>
+                    </div>
+
+                    <!-- Status -->
+                    <div>
+                        <label for="id_status" class="block text-sm font-medium text-gray-700 mb-1">Status *</label>
+                        {{ form.status }}
+                        {% if form.status.errors %}
+                            <p class="text-red-500 text-xs mt-1">{{ form.status.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Recruiter -->
+                    <div>
+                        <label for="id_recruiter" class="block text-sm font-medium text-gray-700 mb-1">Recruiter *</label>
+                        {{ form.recruiter }}
+                        {% if form.recruiter.errors %}
+                            <p class="text-red-500 text-xs mt-1">{{ form.recruiter.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Source -->
+                    <div>
+                        <label for="id_source" class="block text-sm font-medium text-gray-700 mb-1">Source</label>
+                        {{ form.source }}
+                        {% if form.source.errors %}
+                            <p class="text-red-500 text-xs mt-1">{{ form.source.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Notes -->
+                    <div>
+                        <label for="id_notes" class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                        {{ form.notes }}
+                        {% if form.notes.errors %}
+                            <p class="text-red-500 text-xs mt-1">{{ form.notes.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="flex justify-end">
+                        <button type="submit" 
+                                class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                            Add Candidate
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add this in the head section of your base template or here -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+$(document).ready(function() {
+    // Initialize Select2 for competencies
+    $('#id_competencies').select2({
+        placeholder: 'Select or search competencies',
+        allowClear: true,
+        tags: true,
+        width: '100%'
+    });
+
+    // Initialize Select2 for languages
+    $('#id_languages').select2({
+        placeholder: 'Select or search languages',
+        allowClear: true,
+        tags: true,
+        width: '100%'
+    });
+
+    // Handle new competency creation
+    $('#id_new_competency').on('keypress', function(e) {
+        if (e.which === 13) {  // Enter key
+            e.preventDefault();
+            var newCompetency = $(this).val();
+            if (newCompetency) {
+                var newOption = new Option(newCompetency, newCompetency, true, true);
+                $('#id_competencies').append(newOption).trigger('change');
+                $(this).val('');
+            }
+        }
+    });
+
+    // Handle new language creation
+    $('#id_new_language').on('keypress', function(e) {
+        if (e.which === 13) {  // Enter key
+            e.preventDefault();
+            var newLanguage = $(this).val();
+            if (newLanguage) {
+                var newOption = new Option(newLanguage, newLanguage, true, true);
+                $('#id_languages').append(newOption).trigger('change');
+                $(this).val('');
+            }
+        }
+    });
+});
+</script>
+{% endblock %} 

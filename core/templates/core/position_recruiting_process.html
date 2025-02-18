@@ -1,0 +1,465 @@
+{% extends 'core/base.html' %}
+
+{% block header %}{{ position.title }}{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-2xl font-bold">{{ position.title }}</h1>
+        <p class="text-gray-600">{{ position.client.name }}</p>
+    </div>
+
+    <!-- Pipeline View -->
+    <div class="mb-8">
+        <div class="relative">
+            <!-- Pipeline stages -->
+            <div class="grid grid-cols-6 gap-4">
+                {% for stage in stages %}
+                <div class="pipeline-stage bg-white rounded-lg shadow p-4 cursor-pointer hover:shadow-lg transition-shadow"
+                     onclick="showStageDetails('{{ stage.key }}')"
+                     style="border-top: 4px solid {{ stage.color }}">
+                    <h3 class="font-semibold text-gray-900">{{ stage.name }}</h3>
+                    <div class="mt-2 flex items-center justify-between">
+                        <span class="text-sm text-gray-500">
+                            {{ stage.candidate_count }} candidates
+                        </span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Progress line connecting stages -->
+            <div class="absolute top-1/2 left-0 right-0 h-0.5 bg-gray-200 -z-10"></div>
+        </div>
+    </div>
+
+    <!-- Add this right after the Pipeline View section -->
+    <div id="loadingIndicator" class="hidden">
+        <div class="flex justify-center items-center py-8">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+        </div>
+    </div>
+
+    <!-- Stage Details Section -->
+    <div id="stageDetails" class="bg-white rounded-lg shadow-sm p-6 hidden">
+        <h2 id="stageTitle" class="text-xl font-semibold mb-4"></h2>
+        <div id="candidatesList" class="divide-y divide-gray-200">
+            <!-- Candidates will be loaded here -->
+        </div>
+    </div>
+</div>
+
+<!-- Delete Modal (same as before) -->
+<div id="deleteModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3 text-center">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Delete Candidate</h3>
+            <div class="mt-2 px-7 py-3">
+                <p class="text-sm text-gray-500">
+                    Are you sure you want to remove this candidate from the recruiting process?
+                </p>
+            </div>
+            <div class="items-center px-4 py-3">
+                <button id="deleteConfirm"
+                        class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300">
+                    Delete
+                </button>
+                <button onclick="closeDeleteModal()"
+                        class="ml-3 px-4 py-2 bg-gray-100 text-gray-700 text-base font-medium rounded-md shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Candidate Modal -->
+<div id="addCandidateModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-[600px] shadow-lg rounded-md bg-white">
+        <div class="flex justify-between items-start">
+            <h3 class="text-lg font-medium text-gray-900">Add Candidate to Position</h3>
+            <button onclick="closeAddCandidateModal()" class="text-gray-400 hover:text-gray-500">
+                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <div class="mt-6">
+            <!-- Position (Read-only) -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700">Position</label>
+                <div class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50">
+                    {{ position.title }} at {{ position.client.name }}
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Candidate *</label>
+                <div class="flex gap-4">
+                    <button type="button" onclick="openFindCandidateModal()"
+                            class="inline-flex items-center px-4 py-2 bg-gray-100 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-200">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        Find
+                    </button>
+                    <button type="button" onclick="openNewCandidateModal()"
+                            class="inline-flex items-center px-4 py-2 bg-gray-100 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-200">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Create new
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Find Candidate Modal -->
+<div id="findCandidateModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-[800px] shadow-lg rounded-md bg-white">
+        <div class="flex justify-between items-start mb-4">
+            <h3 class="text-xl font-medium text-gray-900">Find Candidate</h3>
+            <button onclick="closeFindCandidateModal()" class="text-gray-400 hover:text-gray-500">
+                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <div class="mb-4">
+            <input type="text" id="candidateSearch" 
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                   placeholder="Search candidates by name...">
+        </div>
+
+        <div id="searchSpinner" class="hidden flex justify-center py-4">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+        </div>
+
+        <div class="max-h-[400px] overflow-y-auto">
+            <div id="candidatesList" class="space-y-2">
+                <!-- Candidates will be populated here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- New Candidate Modal -->
+<div id="newCandidateModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-[600px] shadow-lg rounded-md bg-white">
+        <div class="flex justify-between items-start">
+            <h3 class="text-lg font-medium text-gray-900">Create New Candidate</h3>
+            <button onclick="closeNewCandidateModal()" class="text-gray-400 hover:text-gray-500">
+                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <form id="newCandidateForm" class="mt-6 space-y-6">
+            {% csrf_token %}
+            <div>
+                <label for="first_name" class="block text-sm font-medium text-gray-700">First Name</label>
+                <input type="text" id="first_name" name="first_name" required
+                       class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500">
+            </div>
+            <div>
+                <label for="last_name" class="block text-sm font-medium text-gray-700">Last Name</label>
+                <input type="text" id="last_name" name="last_name" required
+                       class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500">
+            </div>
+            <div>
+                <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+                <input type="email" id="email" name="email" required
+                       class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500">
+            </div>
+            <div>
+                <label for="phone" class="block text-sm font-medium text-gray-700">Phone</label>
+                <input type="tel" id="phone" name="phone"
+                       class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500">
+            </div>
+            <div>
+                <label for="linkedin" class="block text-sm font-medium text-gray-700">LinkedIn</label>
+                <input type="url" id="linkedin" name="linkedin"
+                       class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500">
+            </div>
+
+            <div class="flex justify-end space-x-3">
+                <button type="button" onclick="closeNewCandidateModal()"
+                        class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button type="submit"
+                        class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700">
+                    Create & Add to Position
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+const positionId = {{ position.id }};
+
+let deleteUrl = '';
+
+function confirmDelete(positionId, processId) {
+    deleteUrl = `/position/${positionId}/process/${processId}/delete/`;
+    document.getElementById('deleteModal').classList.remove('hidden');
+}
+
+function closeDeleteModal() {
+    document.getElementById('deleteModal').classList.add('hidden');
+}
+
+document.getElementById('deleteConfirm').addEventListener('click', function() {
+    window.location.href = deleteUrl;
+});
+
+document.getElementById('deleteModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeDeleteModal();
+    }
+});
+
+function showStageDetails(stageKey) {
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const stageDetails = document.getElementById('stageDetails');
+    
+    loadingIndicator.classList.remove('hidden');
+    stageDetails.classList.add('hidden');
+    
+    fetch(`/api/position/${positionId}/stage/${stageKey}/candidates/`)
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                console.error('Error loading candidates:', data.error);
+                return;
+            }
+
+            const stageTitle = document.getElementById('stageTitle');
+            const candidatesList = document.getElementById('candidatesList');
+
+            stageTitle.textContent = data.stage_name;
+            
+            // Render candidates
+            candidatesList.innerHTML = data.candidates.map(candidate => `
+                <div class="py-4">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h3 class="text-sm font-medium">${candidate.name}</h3>
+                            <p class="text-sm text-gray-500">${candidate.email}</p>
+                            <p class="text-xs text-gray-400">${candidate.days_in_stage} days in stage</p>
+                        </div>
+                        <div class="flex space-x-2">
+                            ${data.next_stage ? `
+                                <button onclick="moveCandidate(${candidate.id}, '${data.next_stage}')"
+                                        class="px-3 py-1 text-sm text-blue-600 hover:text-blue-700 border border-blue-600 rounded">
+                                    Move to next stage
+                                </button>
+                            ` : ''}
+                            <button onclick="confirmDelete(${positionId}, ${candidate.id})"
+                                    class="px-3 py-1 text-sm text-red-600 hover:text-red-700">
+                                Remove
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            stageDetails.classList.remove('hidden');
+        })
+        .finally(() => {
+            loadingIndicator.classList.add('hidden');
+        });
+}
+
+function moveCandidate(processId, newStage) {
+    fetch(`/api/recruiting-process/${processId}/move-stage/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({ stage: newStage })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Refresh the pipeline view
+            window.location.reload();
+        }
+    });
+}
+
+function openAddCandidateModal() {
+    document.getElementById('addCandidateModal').classList.remove('hidden');
+}
+
+function closeAddCandidateModal() {
+    document.getElementById('addCandidateModal').classList.add('hidden');
+}
+
+// Simple search function
+async function searchCandidates(query) {
+    const spinner = document.getElementById('searchSpinner');
+    const candidatesList = document.getElementById('candidatesList');
+
+    try {
+        spinner.classList.remove('hidden');
+        
+        const response = await fetch(`/search/candidates/?q=${encodeURIComponent(query || '')}`);
+        const data = await response.json();
+        
+        candidatesList.innerHTML = '';
+
+        if (!data.success) {
+            candidatesList.innerHTML = `
+                <div class="p-4 text-red-600 bg-red-50 rounded-lg">
+                    <p>Error: ${data.error || 'Failed to load candidates'}</p>
+                </div>
+            `;
+            return;
+        }
+
+        if (!data.results || data.results.length === 0) {
+            candidatesList.innerHTML = `
+                <div class="p-4 text-gray-500 text-center">
+                    <p>No candidates found</p>
+                </div>
+            `;
+            return;
+        }
+
+        data.results.forEach(candidate => {
+            const card = document.createElement('div');
+            card.className = 'p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer';
+            
+            card.innerHTML = `
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h4 class="font-medium text-gray-900">${candidate.name}</h4>
+                        <div class="text-sm text-gray-500">
+                            ${candidate.email || 'No email'} • ${candidate.phone || 'No phone'}
+                        </div>
+                    </div>
+                    <button class="px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700">
+                        Select
+                    </button>
+                </div>
+            `;
+            
+            card.querySelector('button').addEventListener('click', () => selectCandidate(candidate));
+            candidatesList.appendChild(card);
+        });
+
+    } catch (error) {
+        candidatesList.innerHTML = `
+            <div class="p-4 text-red-600 bg-red-50 rounded-lg">
+                <p>Error: ${error.message}</p>
+            </div>
+        `;
+    } finally {
+        spinner.classList.add('hidden');
+    }
+}
+
+// Add event listener for search input
+document.getElementById('candidateSearch').addEventListener('input', function(e) {
+    searchCandidates(e.target.value);
+});
+
+async function selectCandidate(candidate) {
+    try {
+        const formData = new FormData();
+        formData.append('candidate', candidate.id);
+        formData.append('position', '{{ position.id }}');
+
+        const response = await fetch('{% url "add_candidate_to_position" position.id %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('Server returned non-JSON response');
+        }
+
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to add candidate');
+        }
+
+        if (data.success) {
+            // Close the modal first
+            closeFindCandidateModal();
+            // Then reload the page
+            window.location.reload();
+        } else {
+            throw new Error(data.error || 'Failed to add candidate');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error adding candidate: ' + error.message);
+    }
+}
+
+function openFindCandidateModal() {
+    document.getElementById('addCandidateModal').classList.add('hidden');
+    document.getElementById('findCandidateModal').classList.remove('hidden');
+    document.getElementById('candidateSearch').value = '';
+    // Load all candidates immediately
+    searchCandidates('');
+}
+
+function closeFindCandidateModal() {
+    document.getElementById('findCandidateModal').classList.add('hidden');
+}
+
+function openNewCandidateModal() {
+    document.getElementById('addCandidateModal').classList.add('hidden');
+    document.getElementById('newCandidateModal').classList.remove('hidden');
+}
+
+function closeNewCandidateModal() {
+    document.getElementById('newCandidateModal').classList.add('hidden');
+    document.getElementById('newCandidateForm').reset();
+}
+
+// Add event listeners to close modals when clicking outside
+document.addEventListener('DOMContentLoaded', function() {
+    const modals = ['addCandidateModal', 'findCandidateModal', 'newCandidateModal'];
+    
+    modals.forEach(modalId => {
+        const modal = document.getElementById(modalId);
+        modal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                switch(modalId) {
+                    case 'addCandidateModal':
+                        closeAddCandidateModal();
+                        break;
+                    case 'findCandidateModal':
+                        closeFindCandidateModal();
+                        break;
+                    case 'newCandidateModal':
+                        closeNewCandidateModal();
+                        break;
+                }
+            }
+        });
+    });
+});
+</script>
+{% endblock %} 

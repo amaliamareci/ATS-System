@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATS System</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                        },
+                        secondary: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            500: '#64748b',
+                            600: '#475569',
+                            700: '#334155',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Arrow rotation animation */
+        .rotate-180 {
+            transform: rotate(180deg);
+        }
+        
+        .arrow-transition {
+            transition: transform 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <div id="sidebar" class="transform fixed inset-y-0 left-0 z-40 transition duration-300 ease-in-out">
+            <div class="flex flex-col w-64 h-full bg-white border-r border-gray-200">
+                <div class="flex flex-col flex-grow pt-5 overflow-y-auto">
+                    <div class="flex items-center flex-shrink-0 px-4 mb-8">
+                        <span class="text-2xl font-bold text-primary-600">ATS System</span>
+                    </div>
+                    
+                    <nav class="flex-1 px-2 pb-4 space-y-1">
+                        <!-- Dashboard Link -->
+                        <a href="{% url 'dashboard' %}" 
+                           class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg hover:bg-primary-50 hover:text-primary-600 {% if request.resolver_match.url_name == 'dashboard' %}bg-primary-50 text-primary-600{% else %}text-gray-700{% endif %}">
+                            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                            Dashboard
+                        </a>
+
+                        <a href="{% url 'client_list' %}" 
+                           class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg hover:bg-primary-50 hover:text-primary-600 {% if request.resolver_match.url_name == 'client_list' %}bg-primary-50 text-primary-600{% else %}text-gray-700{% endif %}">
+                            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                            </svg>
+                            Clients
+                        </a>
+
+                        <a href="{% url 'advanced_search' %}" 
+                           class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg hover:bg-primary-50 hover:text-primary-600 {% if request.resolver_match.url_name == 'advanced_search' %}bg-primary-50 text-primary-600{% else %}text-gray-700{% endif %}">
+                            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                            Advanced Search
+                        </a>
+
+                        <a href="{% url 'candidate_list' %}" 
+                           class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg hover:bg-primary-50 hover:text-primary-600 {% if request.resolver_match.url_name == 'candidate_list' %}bg-primary-50 text-primary-600{% else %}text-gray-700{% endif %}">
+                            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                            Candidates
+                        </a>
+
+                        <a href="{% url 'position_list' %}" 
+                           class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg hover:bg-primary-50 hover:text-primary-600 {% if request.resolver_match.url_name == 'position_list' %}bg-primary-50 text-primary-600{% else %}text-gray-700{% endif %}">
+                            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                            Positions
+                        </a>
+
+                        <a href="{% url 'active_positions' %}" 
+                           class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg hover:bg-primary-50 hover:text-primary-600 {% if request.resolver_match.url_name == 'active_positions' %}bg-primary-50 text-primary-600{% else %}text-gray-700{% endif %}">
+                            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                            </svg>
+                            Active Positions
+                        </a>
+
+                        <a href="{% url 'meeting_calendar' %}" 
+                           class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg hover:bg-primary-50 hover:text-primary-600 {% if request.resolver_match.url_name == 'meeting_calendar' %}bg-primary-50 text-primary-600{% else %}text-gray-700{% endif %}">
+                            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            Meetings
+                        </a>
+
+                        <a href="{% url 'recruiter_list' %}" 
+                           class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg hover:bg-primary-50 hover:text-primary-600 {% if request.resolver_match.url_name == 'recruiter_list' %}bg-primary-50 text-primary-600{% else %}text-gray-700{% endif %}">
+                            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                            Recruiters
+                        </a>
+
+                        <a href="{% url 'recruiting_process_list' %}" 
+                           class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg hover:bg-primary-50 hover:text-primary-600 {% if request.resolver_match.url_name == 'recruiting_process_list' %}bg-primary-50 text-primary-600{% else %}text-gray-700{% endif %}">
+                            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                            Recruiting Process
+                        </a>
+
+                        <a href="{% url 'recruitment_statistics' %}" 
+                           class="group flex items-center px-4 py-3 text-sm font-medium rounded-lg hover:bg-primary-50 hover:text-primary-600 {% if request.resolver_match.url_name == 'recruitment_statistics' %}bg-primary-50 text-primary-600{% else %}text-gray-700{% endif %}">
+                            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                            Statistics
+                        </a>
+                    </nav>
+                </div>
+            </div>
+            <!-- Arrow button positioned at the right edge of sidebar -->
+            <button id="sidebar-toggle" class="absolute -right-10 top-4 inline-flex items-center justify-center p-2 rounded-md text-gray-500 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500">
+                <svg class="h-6 w-6 arrow-transition rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Main Content Area -->
+        <div id="main-content" class="flex-1 flex flex-col overflow-hidden transition-all duration-300 ease-in-out" style="margin-left: 16rem;">
+            <!-- Top Navigation Bar -->
+            <header class="bg-white shadow-sm">
+                <div class="px-4 sm:px-6 lg:px-8 py-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <!-- Menu button (visible on all screens) -->
+                            <button id="mobile-menu-button" class="inline-flex items-center justify-center p-2 rounded-md text-gray-500 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500 mr-2">
+                                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                                </svg>
+                            </button>
+                            <h1 class="text-lg font-semibold text-gray-900">
+                                {% block header %}Dashboard{% endblock %}
+                            </h1>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <!-- User Profile and Logout -->
+                            <div class="flex items-center space-x-3">
+                                <div class="relative" x-data="{ open: false }">
+                                    <button @click="open = !open" class="flex items-center space-x-3 focus:outline-none">
+                                        <!-- User Avatar Circle -->
+                                        <div class="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center">
+                                            <span class="text-sm font-medium text-white">
+                                                {{ request.user.first_name|slice:":1"|upper }}{{ request.user.last_name|slice:":1"|upper }}
+                                            </span>
+                                        </div>
+                                        <!-- User Name -->
+                                        <span class="text-sm font-medium text-gray-700">
+                                            {{ request.user.get_full_name|default:request.user.username }}
+                                        </span>
+                                    </button>
+                                    <!-- Dropdown Menu -->
+                                    <div x-show="open" 
+                                         @click.away="open = false"
+                                         class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+                                        <form method="post" action="{% url 'logout' %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                <div class="flex items-center space-x-2">
+                                                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                                    </svg>
+                                                    <span>Logout</span>
+                                                </div>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="flex-1 overflow-y-auto bg-gray-50 p-4 sm:p-6 lg:p-8" id="content">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Menu toggle with arrow rotation and main content adjustment
+        document.getElementById('sidebar-toggle').addEventListener('click', function(e) {
+            e.stopPropagation(); // Prevent event from bubbling
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('main-content');
+            const arrow = this.querySelector('svg');
+            
+            if (!sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.add('-translate-x-full');
+                mainContent.style.marginLeft = '0';
+                arrow.classList.remove('rotate-180');
+            } else {
+                sidebar.classList.remove('-translate-x-full');
+                mainContent.style.marginLeft = '16rem';
+                arrow.classList.add('rotate-180');
+            }
+        });
+
+        // Only close sidebar when clicking in the main content area's empty spaces
+        document.getElementById('main-content').addEventListener('click', function(e) {
+            const sidebar = document.getElementById('sidebar');
+            const toggleButton = document.getElementById('sidebar-toggle');
+            const mainContent = document.getElementById('main-content');
+            
+            // Check if the click is directly on the main-content div (not its children)
+            // and if the sidebar is currently open
+            if (e.target === this && 
+                !sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.add('-translate-x-full');
+                toggleButton.querySelector('svg').classList.remove('rotate-180');
+                mainContent.style.marginLeft = '0';
+            }
+        });
+
+        // Remove the mobile menu button since we're using the arrow toggle
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        if (mobileMenuButton) {
+            mobileMenuButton.remove();
+        }
+    </script>
+
+    <!-- Add Alpine.js -->
+    <script src="//unpkg.com/alpinejs" defer></script>
+</body>
+</html> 

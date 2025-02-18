@@ -1,0 +1,145 @@
+{% extends 'core/base.html' %}
+
+{% block header %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+    <!-- Key Metrics -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-sm font-medium text-gray-500">Average Time to Hire</h3>
+            <p class="mt-2 text-3xl font-bold text-gray-900">{{ avg_time_to_hire }} days</p>
+            <div class="mt-4">
+                <div class="flex items-center">
+                    <span class="text-sm font-medium text-{% if time_to_hire_trend > 0 %}red{% else %}green{% endif %}-600">
+                        {{ time_to_hire_trend }}%
+                    </span>
+                    <span class="ml-2 text-sm text-gray-500">vs last month</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-sm font-medium text-gray-500">Open Positions</h3>
+            <p class="mt-2 text-3xl font-bold text-gray-900">{{ open_positions_count }}</p>
+            <div class="mt-4">
+                <div class="flex items-center">
+                    <span class="text-sm text-gray-500">{{ positions_filled_count }} filled this month</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-sm font-medium text-gray-500">Active Candidates</h3>
+            <p class="mt-2 text-3xl font-bold text-gray-900">{{ active_candidates_count }}</p>
+            <div class="mt-4">
+                <div class="flex items-center">
+                    <span class="text-sm text-gray-500">{{ new_candidates_count }} new this week</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-sm font-medium text-gray-500">Interview Success Rate</h3>
+            <p class="mt-2 text-3xl font-bold text-gray-900">{{ success_rate }}%</p>
+            <div class="mt-4">
+                <div class="flex items-center">
+                    <span class="text-sm text-gray-500">{{ interviews_this_week }} interviews this week</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Source Distribution -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Candidate Sources</h3>
+        <div class="relative h-64">
+            <canvas id="sourceChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Pipeline Velocity -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Pipeline Velocity</h3>
+        <div class="space-y-4">
+            {% for stage in pipeline_stages %}
+            <div>
+                <div class="flex justify-between mb-1">
+                    <span class="text-sm font-medium text-gray-700">{{ stage.name }}</span>
+                    <span class="text-sm font-medium text-gray-700">{{ stage.count }} candidates</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div class="bg-blue-600 h-2 rounded-full" style="width: {{ stage.percentage }}%"></div>
+                </div>
+                <div class="mt-1 text-xs text-gray-500">Avg. time in stage: {{ stage.avg_time }} days</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Recent Activity</h3>
+        </div>
+        <div class="divide-y divide-gray-200">
+            {% for activity in recent_activities %}
+            <div class="px-6 py-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                            <svg class="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <!-- Icon based on activity type -->
+                                {% if activity.type == 'interview' %}
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                {% elif activity.type == 'status_change' %}
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                {% else %}
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                {% endif %}
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-900">{{ activity.description }}</p>
+                        <p class="text-sm text-gray-500">{{ activity.timestamp }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js for visualizations -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Source Distribution Chart
+    const ctx = document.getElementById('sourceChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: {{ source_labels|safe }},
+            datasets: [{
+                data: {{ source_data|safe }},
+                backgroundColor: [
+                    '#3B82F6',
+                    '#10B981',
+                    '#F59E0B',
+                    '#EF4444',
+                    '#8B5CF6'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right'
+                }
+            }
+        }
+    });
+</script>
+{% endblock %} 

@@ -1,0 +1,1180 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block head %}
+<!-- Add Font Awesome Kit (with all styles) -->
+<script src="https://kit.fontawesome.com/1234567890.js" crossorigin="anonymous"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+<style>
+body {
+    background-color: #F3F4F6;
+}
+
+.stage-card {
+    transition: all 0.2s ease;
+}
+
+.candidate-avatar {
+    width: 32px;
+    height: 32px;
+    background-color: #E5EDFF;
+    color: #3B82F6;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.source-stat {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #E5E7EB;
+}
+
+.source-stat .icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+}
+
+.source-stat .icon.linkedin {
+    background-color: #E5EDFF;
+    color: #3B82F6;
+}
+
+.source-stat .icon.jobs {
+    background-color: #FEF3C7;
+    color: #F59E0B;
+}
+
+.source-stat .icon.internal {
+    background-color: #F3F4F6;
+    color: #6B7280;
+}
+
+.source-stat .icon.meta {
+    background-color: #ECFDF5;
+    color: #10B981;
+}
+
+.trend-up {
+    color: #10B981;
+}
+
+.trend-down {
+    color: #EF4444;
+}
+
+/* Pipeline Configuration Styles */
+.pipeline-stage {
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    background: white;
+}
+
+.pipeline-stage-header {
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #E5E7EB;
+}
+
+.color-picker {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+}
+
+.sub-status-item {
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #F3F4F6;
+}
+
+.sub-status-item:last-child {
+    border-bottom: none;
+}
+
+.drag-handle {
+    cursor: move;
+    color: #9CA3AF;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Top Navigation Bar -->
+<div class="bg-white border-b border-gray-200 mb-6">
+    <div class="container mx-auto px-4">
+        <div class="flex items-center h-16">
+            <a href="{% url 'active_positions' %}" class="text-gray-500 hover:text-gray-700 mr-4">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+            </a>
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-semibold text-gray-900">{{ position.title }}</h1>
+                        <div class="flex items-center text-sm text-gray-500 mt-0.5">
+                            <span>{{ position.client.name }}</span>
+                            <span class="mx-2">•</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                Active
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="ml-auto">
+                <button data-modal-trigger="openAdd" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    <i class="fas fa-plus mr-2"></i>
+                    Add candidate
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container mx-auto px-4">
+    <!-- Overview and Pipeline Tabs -->
+    <div class="mb-6">
+        <nav class="flex space-x-8" aria-label="Tabs">
+            <a href="{% url 'position_overview' position.id %}" class="border-b-2 border-transparent px-1 pb-4 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700">
+                Overview
+            </a>
+            <a href="#" class="border-b-2 border-blue-500 px-1 pb-4 text-sm font-medium text-blue-600">
+                Pipeline
+            </a>
+            <div class="flex-1 text-right py-3 text-sm text-gray-500">
+                Last Update: {{ position.updated_at|date:"g:i A" }}
+            </div>
+        </nav>
+    </div>
+
+    <!-- Hiring Pipeline Section -->
+    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-lg font-medium text-gray-900">Hiring Pipeline</h2>
+            <a href="#" class="text-sm text-blue-600 hover:text-blue-700">Customize Pipeline</a>
+        </div>
+        <!-- Pipeline Stages -->
+        <div class="grid grid-cols-6 gap-2">
+            {% for stage in pipeline_data %}
+            <div class="w-full">
+                <div class="stage-card bg-white hover:bg-gray-50 rounded-lg cursor-pointer relative overflow-hidden" 
+                     data-stage-key="{{ stage.key }}"
+                     data-stage-name="{{ stage.name }}">
+                    <!-- Top border container -->
+                    <div class="h-[3px] w-full relative">
+                        <!-- Base color border -->
+                        <div class="absolute top-0 left-0 right-0 h-full" style="background-color: {{ stage.color }}; opacity: 0.6;"></div>
+                        <!-- Darker shade overlay -->
+                        <div class="absolute top-0 left-0 h-full" 
+                             style="background-color: {{ stage.color }}; opacity: 1; width: calc({{ stage.total_count }}/{{ total_candidates }} * 100%);"></div>
+                    </div>
+                    <!-- Content -->
+                    <div class="px-3 py-2">
+                        <h3 class="text-xs font-medium text-gray-600">{{ stage.name }}</h3>
+                        <span class="text-xl font-semibold text-gray-900 mt-1 block">{{ stage.total_count }}</span>
+                    </div>
+                    <div class="px-3 py-2">
+                        <div class="substages-container">
+                            {% for sub_status in stage.sub_statuses|slice:":2" %}
+                            <div class="text-xs text-gray-500 mb-1">{{ sub_status.name }} ({{ sub_status.processes|length }})</div>
+                            {% endfor %}
+                            {% if stage.sub_statuses|length > 2 %}
+                            <div class="text-xs text-blue-600 hover:text-blue-700 cursor-pointer mb-1 see-more-initial" onclick="toggleSubStages(this, '{{ stage.key }}')">
+                                See more
+                            </div>
+                            <div class="hidden additional-substages" data-stage="{{ stage.key }}">
+                                {% for sub_status in stage.sub_statuses|slice:"2:" %}
+                                <div class="text-xs text-gray-500 mb-1">{{ sub_status.name }} ({{ sub_status.processes|length }})</div>
+                                {% endfor %}
+                                <div class="text-xs text-blue-600 hover:text-blue-700 cursor-pointer mt-1 see-more-expanded" onclick="toggleSubStages(this, '{{ stage.key }}')">
+                                    See less
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Sub-status Filters -->
+        <div id="subStatusFilters" class="hidden mt-6 border-t pt-4">
+            <div class="flex items-center mb-3">
+                <h3 class="text-sm font-medium text-gray-700" id="selectedStageName"></h3>
+                <div class="relative ml-auto">
+                    <button onclick="toggleFilterDropdown()" class="ml-3 p-2.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg focus:outline-none transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                        </svg>
+                    </button>
+                    <div id="filterDropdown" class="hidden absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                        <div class="p-3">
+                            <div id="subStatusToggles" class="space-y-2 max-h-[300px] overflow-y-auto">
+                                <!-- Sub-status toggles will be added here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="subStatusButtons" class="flex flex-wrap gap-2">
+                <!-- Active filter indicators will be shown here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Stage Details Section -->
+    <div id="stageDetails" class="bg-white rounded-lg shadow-sm p-6 mb-6 hidden">
+        <h2 id="stageTitle" class="text-lg font-medium mb-4"></h2>
+        <div id="candidatesList" class="space-y-2">
+            <!-- Candidates will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Candidate Sources Overview -->
+    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-medium">Candidate Sources Overview</h2>
+            <div class="text-sm text-gray-500">Last 30 days <i class="fas fa-info-circle ml-1"></i></div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+            <!-- LinkedIn -->
+            <div class="bg-white p-4 rounded-lg border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <svg class="w-8 h-8 text-[#0A66C2] mr-3" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                        </svg>
+                        <div>
+                            <div class="font-medium text-gray-900">LinkedIn</div>
+                            <div class="text-sm text-gray-500">42% of total candidates</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xl font-semibold text-gray-900">38</div>
+                        <div class="text-sm text-green-500">↑ 12%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- eJobs -->
+            <div class="bg-white p-4 rounded-lg border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <svg class="w-8 h-8 text-[#F59E0B] mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                        <div>
+                            <div class="font-medium text-gray-900">eJobs</div>
+                            <div class="text-sm text-gray-500">18% of total candidates</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xl font-semibold text-gray-900">16</div>
+                        <div class="text-sm text-red-500">↓ 5%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Internal Referrals -->
+            <div class="bg-white p-4 rounded-lg border border-gray-200">
+        <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <svg class="w-8 h-8 text-[#6B7280] mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+            <div>
+                            <div class="font-medium text-gray-900">Internal Referrals</div>
+                            <div class="text-sm text-gray-500">28% of total candidates</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xl font-semibold text-gray-900">25</div>
+                        <div class="text-sm text-green-500">↑ 8%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MetaAds -->
+            <div class="bg-white p-4 rounded-lg border border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <svg class="w-8 h-8 text-[#10B981] mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <div>
+                            <div class="font-medium text-gray-900">MetaAds</div>
+                            <div class="text-sm text-gray-500">12% of total candidates</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xl font-semibold text-gray-900">11</div>
+                        <div class="text-sm text-gray-500">— 0%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Position Metrics -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-medium">Position Metrics</h2>
+            <div class="text-sm text-gray-500">Last 30 days <i class="fas fa-info-circle ml-1"></i></div>
+        </div>
+        <div class="grid grid-cols-4 gap-4">
+            <!-- Time to Fill -->
+            <div class="bg-white p-4 rounded-lg border border-gray-200 relative">
+                <svg class="w-4 h-4 text-blue-500 absolute top-4 right-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                    <div class="text-sm text-gray-600">Time to Fill</div>
+                    <div class="mt-1">
+                        <span class="text-2xl font-semibold text-gray-900">32 days</span>
+                    </div>
+                    <div class="mt-2 flex items-center text-xs text-green-600">
+                        <span>↓ 12% vs last position</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cost per Hire -->
+            <div class="bg-white p-4 rounded-lg border border-gray-200 relative">
+                <svg class="w-4 h-4 text-green-500 absolute top-4 right-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                    <div class="text-sm text-gray-600">Cost per Hire</div>
+                    <div class="mt-1">
+                        <span class="text-2xl font-semibold text-gray-900">$3,250</span>
+                    </div>
+                    <div class="mt-2 flex items-center text-xs text-red-600">
+                        <span>↑ 8% vs last position</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interview to Offer -->
+            <div class="bg-white p-4 rounded-lg border border-gray-200 relative">
+                <i class="fa-solid fa-handshake text-purple-500 absolute top-4 right-4 w-4 h-4"></i>
+                <div>
+                    <div class="text-sm text-gray-600">Interview to Offer</div>
+                    <div class="mt-1">
+                        <span class="text-2xl font-semibold text-gray-900">25%</span>
+                    </div>
+                    <div class="mt-2 flex items-center text-xs text-green-600">
+                        <span>↑ 5% vs last position</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Offer Acceptance -->
+            <div class="bg-white p-4 rounded-lg border border-gray-200 relative">
+                <svg class="w-4 h-4 text-green-500 absolute top-4 right-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                    <div class="text-sm text-gray-600">Offer Acceptance</div>
+                    <div class="mt-1">
+                        <span class="text-2xl font-semibold text-gray-900">85%</span>
+                    </div>
+                    <div class="mt-2 flex items-center text-xs text-gray-600">
+                        <span>— Same as last position</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Interview Scheduling and Rejection Reasons -->
+        <div class="grid grid-cols-2 gap-4 mt-4">
+            <!-- Interview Scheduling -->
+            <div class="bg-white p-4 rounded-lg border border-gray-200">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-medium text-gray-900">Interview Scheduling</h3>
+                    <div class="text-xs text-gray-500">Last 7 days</div>
+                </div>
+                <div class="space-y-3">
+                    <!-- Scheduled -->
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-2 h-2 rounded-full bg-blue-500 mr-2"></div>
+                            <span class="text-sm text-gray-600">Scheduled</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm font-medium">12</span>
+                            <div class="w-24 bg-blue-100 rounded-full h-2">
+                                <div class="bg-blue-500 h-2 rounded-full" style="width: 60%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Completed -->
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-2 h-2 rounded-full bg-green-500 mr-2"></div>
+                            <span class="text-sm text-gray-600">Completed</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm font-medium">8</span>
+                            <div class="w-24 bg-green-100 rounded-full h-2">
+                                <div class="bg-green-500 h-2 rounded-full" style="width: 40%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cancelled -->
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-2 h-2 rounded-full bg-red-500 mr-2"></div>
+                            <span class="text-sm text-gray-600">Cancelled</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm font-medium">2</span>
+                            <div class="w-24 bg-red-100 rounded-full h-2">
+                                <div class="bg-red-500 h-2 rounded-full" style="width: 10%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rejection Reasons -->
+            <div class="bg-white p-4 rounded-lg border border-gray-200">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-medium text-gray-900">Rejection Reasons</h3>
+                    <div class="text-xs text-gray-500">Last 30 days</div>
+                </div>
+                <div class="space-y-3">
+                    <!-- Technical Skills -->
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-2 h-2 rounded-full bg-orange-500 mr-2"></div>
+                            <span class="text-sm text-gray-600">Technical Skills</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm font-medium">45%</span>
+                            <div class="w-24 bg-orange-100 rounded-full h-2">
+                                <div class="bg-orange-500 h-2 rounded-full" style="width: 45%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cultural Fit -->
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-2 h-2 rounded-full bg-purple-500 mr-2"></div>
+                            <span class="text-sm text-gray-600">Cultural Fit</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm font-medium">30%</span>
+                            <div class="w-24 bg-purple-100 rounded-full h-2">
+                                <div class="bg-purple-500 h-2 rounded-full" style="width: 30%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Experience Level -->
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-2 h-2 rounded-full bg-yellow-500 mr-2"></div>
+                            <span class="text-sm text-gray-600">Experience Level</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm font-medium">25%</span>
+                            <div class="w-24 bg-yellow-100 rounded-full h-2">
+                                <div class="bg-yellow-500 h-2 rounded-full" style="width: 25%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+                    </div>
+                </div>
+                
+<!-- Add Candidate Modal -->
+<div id="addCandidateModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-[600px] shadow-lg rounded-md bg-white">
+                            <div class="flex justify-between items-start">
+            <h3 class="text-lg font-medium text-gray-900">Add Candidate to Position</h3>
+            <button data-modal-trigger="closeAdd" class="text-gray-400 hover:text-gray-500">
+                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <div class="mt-6">
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700">Position</label>
+                <div class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50">
+                    {{ position.title }} at {{ position.client.name }}
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Candidate *</label>
+                <div class="flex gap-4">
+                    <button type="button" data-modal-trigger="openFind"
+                            class="inline-flex items-center px-4 py-2 bg-gray-100 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-200">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        Find existing
+                    </button>
+                    <button type="button" data-modal-trigger="openNew"
+                            class="inline-flex items-center px-4 py-2 bg-gray-100 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-200">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Create new
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pipeline Configuration Modal -->
+<div id="pipelineConfigModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-[800px] shadow-lg rounded-md bg-white">
+        <div class="flex justify-between items-start mb-6">
+            <h3 class="text-lg font-medium text-gray-900">Configure Hiring Pipeline</h3>
+            <button onclick="closePipelineConfigModal()" class="text-gray-400 hover:text-gray-500">
+                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <div class="space-y-4">
+            <div class="flex justify-between items-center">
+                <h4 class="text-sm font-medium text-gray-700">Pipeline Stages</h4>
+                <button onclick="addNewStage()" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-700">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add Stage
+                </button>
+            </div>
+
+            <div id="pipelineStages" class="space-y-4">
+                <!-- Pipeline stages will be added here -->
+            </div>
+
+            <div class="flex justify-end space-x-3 mt-6">
+                <button onclick="closePipelineConfigModal()" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button onclick="savePipelineConfig()" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
+                    Save Pipeline
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% include "core/modals/find_candidate_modal.html" %}
+{% include "core/modals/new_candidate_modal.html" %}
+
+<script>
+const pipelineData = {{ pipeline_data_json|safe }};
+const positionId = {{ position.id }};
+let currentStage = null;
+const totalCandidates = {{ total_candidates }};
+
+function toggleFilterDropdown() {
+    const dropdown = document.getElementById('filterDropdown');
+    dropdown.classList.toggle('hidden');
+    
+    // Add click outside listener to close dropdown
+    function closeOnClickOutside(e) {
+        const filterButton = e.target.closest('button');
+        const dropdownContent = e.target.closest('#filterDropdown');
+        
+        if (!filterButton && !dropdownContent) {
+            dropdown.classList.add('hidden');
+            document.removeEventListener('click', closeOnClickOutside);
+        }
+    }
+    
+    // Only add the listener if the dropdown is being opened
+    if (!dropdown.classList.contains('hidden')) {
+        // Use setTimeout to avoid immediate trigger
+        setTimeout(() => {
+            document.addEventListener('click', closeOnClickOutside);
+        }, 0);
+    }
+}
+
+function handleStageClick(stageKey, stageName) {
+    const stageDetails = document.getElementById('stageDetails');
+    const stageTitle = document.getElementById('stageTitle');
+    const candidatesList = document.getElementById('candidatesList');
+    const subStatusFilters = document.getElementById('subStatusFilters');
+    const selectedStageName = document.getElementById('selectedStageName');
+    const subStatusToggles = document.getElementById('subStatusToggles');
+    
+    // Remove selected class from all stage cards
+    document.querySelectorAll('.stage-card').forEach(card => {
+        card.classList.remove('selected', 'bg-blue-50');
+        card.classList.add('bg-white');
+    });
+    
+    // If clicking the same stage, toggle visibility
+    if (currentStage === stageKey) {
+        stageDetails.classList.add('hidden');
+        subStatusFilters.classList.add('hidden');
+        currentStage = null;
+        return;
+    }
+    
+    currentStage = stageKey;
+    
+    // Add selected class to current stage card
+    const selectedCard = document.querySelector(`[data-stage-key="${stageKey}"]`);
+    if (selectedCard) {
+        selectedCard.classList.remove('bg-white');
+        selectedCard.classList.add('bg-blue-50');
+    }
+    
+    // Find the stage data
+    const stageData = pipelineData.find(stage => stage.key === stageKey);
+    if (!stageData) return;
+    
+    // Update stage name and show sub-status filters
+    selectedStageName.textContent = stageName;
+    subStatusFilters.classList.remove('hidden');
+    
+    // Generate sub-status toggles
+    let togglesHtml = '';
+    stageData.sub_statuses.forEach(subStatus => {
+        togglesHtml += `
+            <label class="flex items-center justify-between p-2 hover:bg-gray-50 rounded cursor-pointer">
+                <div class="flex-1 mr-4">
+                    <span class="text-sm text-gray-700">${subStatus.name} (${subStatus.processes.length})</span>
+                </div>
+                <div class="flex-shrink-0">
+                    <div class="relative inline-block w-10 align-middle select-none">
+                        <input type="checkbox" 
+                               name="sub_status" 
+                               value="${subStatus.key}"
+                               id="toggle_${subStatus.key}"
+                               onchange="updateFilters()"
+                               class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
+                        <label for="toggle_${subStatus.key}" 
+                               class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                    </div>
+                </div>
+            </label>
+        `;
+    });
+    subStatusToggles.innerHTML = togglesHtml;
+    
+    // Show all candidates for this stage initially
+    showCandidatesForStage(stageData);
+}
+
+function updateFilters() {
+    const stageData = pipelineData.find(stage => stage.key === currentStage);
+    if (!stageData) return;
+    
+    const selectedSubStatuses = Array.from(document.querySelectorAll('input[name="sub_status"]:checked'))
+        .map(checkbox => checkbox.value);
+    
+    if (selectedSubStatuses.length === 0) {
+        showCandidatesForStage(stageData);
+    } else {
+        const filteredStageData = {
+            ...stageData,
+            sub_statuses: stageData.sub_statuses.filter(s => selectedSubStatuses.includes(s.key))
+        };
+        showCandidatesForStage(filteredStageData);
+    }
+    
+    // Update active filters display
+    const subStatusButtons = document.getElementById('subStatusButtons');
+    subStatusButtons.innerHTML = selectedSubStatuses.map(key => {
+        const subStatus = stageData.sub_statuses.find(s => s.key === key);
+        return `
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
+                ${subStatus.name}
+            </span>
+        `;
+    }).join('');
+}
+
+// Add styles for toggle switches
+const style = document.createElement('style');
+style.textContent = `
+    .toggle-checkbox:checked {
+        right: 0;
+        border-color: #3B82F6;
+    }
+    .toggle-checkbox:checked + .toggle-label {
+        background-color: #3B82F6;
+    }
+    .toggle-label {
+        transition: background-color 0.2s ease;
+    }
+`;
+document.head.appendChild(style);
+
+function showCandidatesForStage(stageData, subStatusKey = null) {
+    const candidatesList = document.getElementById('candidatesList');
+    let html = '';
+    
+    if (subStatusKey) {
+        // When a filter is active, show only the filtered sub-status with expanded view
+        const subStatus = stageData.sub_statuses.find(s => s.key === subStatusKey);
+        if (subStatus && subStatus.processes.length > 0) {
+            const subStatusId = `sub-status-${subStatus.key}`;
+            const bgColor = 'bg-blue-50';
+            const textColor = 'text-blue-700';
+            html += generateSubStatusHtml(subStatus, subStatusId, bgColor, textColor);
+        }
+    } else {
+        // Show all sub-statuses expanded by default
+        stageData.sub_statuses.forEach(subStatus => {
+            if (subStatus.processes.length > 0) {
+                const subStatusId = `sub-status-${subStatus.key}`;
+                const isScreeningScheduled = subStatus.name === 'Screening Scheduled';
+                const bgColor = isScreeningScheduled ? 'bg-blue-50' : 'bg-green-50';
+                const textColor = isScreeningScheduled ? 'text-blue-700' : 'text-green-700';
+                html += generateSubStatusHtml(subStatus, subStatusId, bgColor, textColor);
+            }
+        });
+    }
+    
+    candidatesList.innerHTML = html;
+    document.getElementById('stageDetails').classList.remove('hidden');
+    
+    // Always expand all sections by default
+    document.querySelectorAll('[id^="sub-status-"]').forEach(el => {
+        el.classList.remove('hidden');
+        const chevron = el.previousElementSibling.querySelector('.chevron-icon');
+        if (chevron) {
+            chevron.style.transform = 'rotate(90deg)';
+        }
+    });
+}
+
+function generateSubStatusHtml(subStatus, subStatusId, bgColor, textColor) {
+    return `
+        <div class="mb-4">
+            <div class="flex items-center ${bgColor} rounded-lg p-3 cursor-pointer" onclick="toggleSubStatus('${subStatusId}')">
+                <svg class="w-5 h-5 ${textColor} transform transition-transform duration-200 chevron-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+                <div class="flex-1 ml-2">
+                    <span class="font-medium ${textColor}">${subStatus.name}</span>
+                    <span class="ml-2 ${textColor}">(${subStatus.processes.length})</span>
+                </div>
+                <div class="text-sm ${textColor}">Avg. time: ${subStatus.avg_time || '2'} days</div>
+            </div>
+            <div id="${subStatusId}" class="mt-3 space-y-3 hidden pl-2">
+                ${generateCandidatesHtml(subStatus.processes)}
+            </div>
+        </div>
+    `;
+}
+
+function generateCandidatesHtml(processes) {
+    return processes.map(process => {
+        const initials = `${process.candidate.first_name[0]}${process.candidate.last_name[0]}`;
+        return `
+            <div class="bg-white border border-gray-200 rounded-lg hover:border-gray-300 transition-colors duration-150">
+                <div class="p-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="flex items-center justify-center w-10 h-10 rounded-full bg-blue-50 text-blue-600 text-sm font-medium mr-3">
+                                ${initials}
+                            </div>
+                                <div>
+                                <div class="flex items-center gap-2">
+                                    <a href="/position/${positionId}/candidate/${process.candidate.id}/" 
+                                       class="text-base font-medium text-gray-900 hover:text-blue-600">
+                                        ${process.candidate.first_name} ${process.candidate.last_name}
+                                    </a>
+                                    <span class="text-sm text-gray-500">Frontend Developer</span>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                                        Internal
+                                        </span>
+                                </div>
+                                <div class="flex items-center mt-2 gap-4">
+                                    <div class="flex items-center text-sm text-green-700 bg-green-50 px-2 py-1 rounded">
+                                        Ready for Client Review
+                                    </div>
+                                    <div class="flex items-center text-sm text-gray-500">
+                                        <i class="far fa-clock text-gray-400 mr-1"></i>
+                                        3 days in stage
+                                </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <div class="flex flex-col">
+                                <span class="text-sm text-gray-500">Interview Score</span>
+                                <div class="flex items-center mt-1">
+                                    <i class="fas fa-chart-line text-green-500 mr-1"></i>
+                                    <span class="text-sm font-medium text-green-500">8.5/10</span>
+                                </div>
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-sm text-gray-500">CV Match</span>
+                                <div class="flex items-center mt-1">
+                                    <i class="fas fa-chart-line text-green-500 mr-1"></i>
+                                    <span class="text-sm font-medium text-green-500">92</span>
+                                </div>
+                            </div>
+                            <div class="ml-auto flex items-center gap-6">
+                                <button class="text-gray-400 hover:text-blue-500 transition-colors duration-150" onclick="toggleActionButton(this, 'calendar')">
+                                    <i class="fas fa-calendar-alt text-xl"></i>
+                                </button>
+                                <button class="text-gray-400 hover:text-yellow-400 transition-colors duration-150" onclick="toggleActionButton(this, 'star')">
+                                    <i class="fas fa-star text-xl"></i>
+                                </button>
+                                <button class="text-gray-400 hover:text-gray-600 transition-colors duration-150">
+                                    <i class="fas fa-ellipsis-v text-xl"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Add this function to handle button clicks
+function toggleActionButton(button, type) {
+    // Remove active state if already active
+    if (button.classList.contains('active')) {
+        button.classList.remove('active');
+        switch (type) {
+            case 'calendar':
+                button.classList.remove('text-blue-500');
+                button.classList.add('text-gray-400');
+                break;
+            case 'star':
+                button.classList.remove('text-yellow-400');
+                button.classList.add('text-gray-400');
+                break;
+        }
+    } else {
+        // Add active state
+        button.classList.add('active');
+        switch (type) {
+            case 'calendar':
+                button.classList.remove('text-gray-400');
+                button.classList.add('text-blue-500');
+                break;
+            case 'star':
+                button.classList.remove('text-gray-400');
+                button.classList.add('text-yellow-400');
+                break;
+        }
+    }
+}
+
+function toggleSubStatus(id) {
+    const header = document.querySelector(`#${id}`).previousElementSibling;
+    const content = document.getElementById(id);
+    const chevron = header.querySelector('.chevron-icon');
+    
+    if (content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        chevron.style.transform = 'rotate(90deg)';
+    } else {
+        content.classList.add('hidden');
+        chevron.style.transform = 'rotate(0deg)';
+    }
+}
+
+function getSourceIcon(source) {
+    switch (source) {
+        case 'LinkedIn':
+            return '<i class="fab fa-linkedin text-blue-600"></i>';
+        case 'eJobs':
+            return '<i class="fas fa-briefcase text-gray-600"></i>';
+        case 'Internal':
+            return '<i class="fas fa-building text-gray-600"></i>';
+        default:
+            return '<i class="fas fa-globe text-gray-600"></i>';
+    }
+}
+
+// Add event listeners when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Add click listeners for stage cards
+    document.querySelectorAll('.stage-card').forEach(card => {
+        card.addEventListener('click', function() {
+            const stageKey = this.dataset.stageKey;
+            const stageName = this.dataset.stageName;
+            handleStageClick(stageKey, stageName);
+        });
+    });
+
+    // Add click listeners for modals
+    document.querySelectorAll('[data-modal-trigger]').forEach(trigger => {
+        trigger.addEventListener('click', function() {
+            const action = this.dataset.modalTrigger;
+            switch(action) {
+                case 'openAdd':
+                    openAddCandidateModal();
+                    break;
+                case 'closeAdd':
+                    closeAddCandidateModal();
+                    break;
+                case 'openFind':
+                    openFindCandidateModal();
+                    break;
+                case 'openNew':
+                    openNewCandidateModal();
+                    break;
+            }
+        });
+    });
+});
+
+function openAddCandidateModal() {
+    document.getElementById('addCandidateModal').classList.remove('hidden');
+}
+
+function closeAddCandidateModal() {
+    document.getElementById('addCandidateModal').classList.add('hidden');
+}
+
+function openFindCandidateModal() {
+    closeAddCandidateModal();
+    document.getElementById('findCandidateModal').classList.remove('hidden');
+    // Load initial candidates
+    searchCandidates('');
+}
+
+function openNewCandidateModal() {
+    closeAddCandidateModal();
+    document.getElementById('newCandidateModal').classList.remove('hidden');
+}
+
+// Pipeline Configuration Functions
+function openPipelineConfigModal() {
+    document.getElementById('pipelineConfigModal').classList.remove('hidden');
+    loadDefaultPipeline();
+}
+
+function closePipelineConfigModal() {
+    document.getElementById('pipelineConfigModal').classList.add('hidden');
+}
+
+function loadDefaultPipeline() {
+    const defaultPipeline = [
+        {
+            key: 'pending_screening',
+            name: 'Pending Screening',
+            color: '#6B7280',
+            sub_statuses: [
+                { key: 'screening_not_created', name: 'Screening Not Created' },
+                { key: 'screening_created', name: 'Screening Created' }
+            ]
+        },
+        {
+            key: 'screening',
+            name: 'Screening',
+            color: '#3B82F6',
+            sub_statuses: [
+                { key: 'screening_scheduled', name: 'Screening Scheduled' },
+                { key: 'can_be_sent', name: 'Can be sent to client' }
+            ]
+        },
+        // Add more default stages as needed
+    ];
+
+    renderPipelineStages(defaultPipeline);
+}
+
+function renderPipelineStages(stages) {
+    const container = document.getElementById('pipelineStages');
+    container.innerHTML = stages.map((stage, index) => `
+        <div class="pipeline-stage" data-stage-index="${index}">
+            <div class="pipeline-stage-header">
+                <div class="flex items-center space-x-3">
+                    <span class="drag-handle">
+                        <i class="fas fa-grip-vertical"></i>
+                    </span>
+                    <input type="text" class="border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                           value="${stage.name}" placeholder="Stage Name">
+                </div>
+                <div class="flex items-center space-x-3">
+                    <input type="color" class="color-picker" value="${stage.color}">
+                    <button onclick="removeStage(${index})" class="text-gray-400 hover:text-red-600">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-3 space-y-2">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-sm text-gray-500">Sub-statuses</span>
+                    <button onclick="addSubStatus(${index})" class="text-sm text-blue-600 hover:text-blue-700">
+                        <i class="fas fa-plus mr-1"></i> Add
+                    </button>
+                </div>
+                <div class="sub-statuses-container">
+                    ${stage.sub_statuses.map((subStatus, subIndex) => `
+                        <div class="sub-status-item">
+                            <div class="flex items-center space-x-3">
+                                <span class="drag-handle">
+                                    <i class="fas fa-grip-vertical"></i>
+                                </span>
+                                <input type="text" class="border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                       value="${subStatus.name}" placeholder="Sub-status Name">
+                            </div>
+                            <button onclick="removeSubStatus(${index}, ${subIndex})" class="text-gray-400 hover:text-red-600">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        </div>
+    `).join('');
+
+    // Initialize drag and drop functionality
+    initializeDragAndDrop();
+}
+
+function addNewStage() {
+    const newStage = {
+        key: 'new_stage_' + Date.now(),
+        name: '',
+        color: '#6B7280',
+        sub_statuses: []
+    };
+
+    const container = document.getElementById('pipelineStages');
+    const stages = [...getCurrentPipelineConfig(), newStage];
+    renderPipelineStages(stages);
+}
+
+function removeStage(index) {
+    const stages = getCurrentPipelineConfig();
+    stages.splice(index, 1);
+    renderPipelineStages(stages);
+}
+
+function addSubStatus(stageIndex) {
+    const stages = getCurrentPipelineConfig();
+    stages[stageIndex].sub_statuses.push({
+        key: 'new_sub_status_' + Date.now(),
+        name: ''
+    });
+    renderPipelineStages(stages);
+}
+
+function removeSubStatus(stageIndex, subStatusIndex) {
+    const stages = getCurrentPipelineConfig();
+    stages[stageIndex].sub_statuses.splice(subStatusIndex, 1);
+    renderPipelineStages(stages);
+}
+
+function getCurrentPipelineConfig() {
+    const stages = [];
+    document.querySelectorAll('.pipeline-stage').forEach(stageEl => {
+        const stageIndex = parseInt(stageEl.dataset.stageIndex);
+        const stageName = stageEl.querySelector('input[type="text"]').value;
+        const stageColor = stageEl.querySelector('input[type="color"]').value;
+        
+        const subStatuses = [];
+        stageEl.querySelectorAll('.sub-status-item input[type="text"]').forEach(input => {
+            subStatuses.push({
+                key: 'sub_status_' + Date.now() + '_' + subStatuses.length,
+                name: input.value
+            });
+        });
+
+        stages[stageIndex] = {
+            key: 'stage_' + Date.now() + '_' + stageIndex,
+            name: stageName,
+            color: stageColor,
+            sub_statuses: subStatuses
+        };
+    });
+
+    return stages;
+}
+
+function initializeDragAndDrop() {
+    // Add drag and drop functionality for stages and sub-statuses
+    // This can be implemented using a library like SortableJS
+}
+
+function savePipelineConfig() {
+    const pipelineConfig = getCurrentPipelineConfig();
+    
+    // Send the configuration to the server
+    fetch('/api/client/pipeline/save', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify({ pipeline: pipelineConfig })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            closePipelineConfigModal();
+            // Optionally reload the page or update the UI
+        } else {
+            alert('Error saving pipeline configuration');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error saving pipeline configuration');
+    });
+}
+
+function toggleSubStages(button, stageKey) {
+    const container = button.closest('.substages-container');
+    const additionalStages = container.querySelector('.additional-substages');
+    const initialButton = container.querySelector('.see-more-initial');
+    
+    if (additionalStages.classList.contains('hidden')) {
+        additionalStages.classList.remove('hidden');
+        initialButton.classList.add('hidden');
+    } else {
+        additionalStages.classList.add('hidden');
+        initialButton.classList.remove('hidden');
+    }
+}
+</script>
+{% endblock %} 

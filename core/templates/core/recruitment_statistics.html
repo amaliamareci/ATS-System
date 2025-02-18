@@ -1,0 +1,91 @@
+{% extends 'core/base.html' %}
+
+{% block header %}Recruitment Statistics{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+    <!-- Candidates sent this month -->
+    <div>
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold text-gray-900">Candidati trimisi din Ianuarie</h2>
+            <a href="{% url 'recruitment_statistics_details' %}" class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-md">
+                DETALII
+                <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+            </a>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-yellow-50 rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-2">Echipa</h3>
+                <p class="text-5xl font-bold text-gray-900">{{ team_current_month }}</p>
+            </div>
+            <div class="bg-blue-50 rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-2">Calin</h3>
+                <p class="text-5xl font-bold text-gray-900">{{ calin_current_month }}</p>
+            </div>
+            <div class="bg-blue-50 rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-2">Emil</h3>
+                <p class="text-5xl font-bold text-gray-900">{{ emil_current_month }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Closed positions this month -->
+    <div>
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Pozitii inchise din Ianuarie</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-yellow-50 rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-2">Echipa</h3>
+                <p class="text-5xl font-bold text-gray-900">{{ team_closed_positions }}</p>
+            </div>
+            <div class="bg-blue-50 rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-2">Calin</h3>
+                <p class="text-5xl font-bold text-gray-900">{{ calin_closed_positions }}</p>
+            </div>
+            <div class="bg-blue-50 rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-2">Emil</h3>
+                <p class="text-5xl font-bold text-gray-900">{{ emil_closed_positions }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Candidates sent last month -->
+    <div>
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Candidati trimisi luna precedenta</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-yellow-50 rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-2">Echipa</h3>
+                <p class="text-5xl font-bold text-gray-900">{{ team_last_month }}</p>
+            </div>
+            <div class="bg-blue-50 rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-2">Calin</h3>
+                <p class="text-5xl font-bold text-gray-900">{{ calin_last_month }}</p>
+            </div>
+            <div class="bg-blue-50 rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-2">Emil</h3>
+                <p class="text-5xl font-bold text-gray-900">{{ emil_last_month }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Candidates sent current month -->
+    <div>
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Candidati trimisi luna curenta</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-yellow-50 rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-2">Echipa</h3>
+                <p class="text-5xl font-bold text-gray-900">{{ team_current_month }}</p>
+            </div>
+            <div class="bg-blue-50 rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-2">Calin</h3>
+                <p class="text-5xl font-bold text-gray-900">{{ calin_current_month }}</p>
+            </div>
+            <div class="bg-blue-50 rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-2">Emil</h3>
+                <p class="text-5xl font-bold text-gray-900">{{ emil_current_month }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

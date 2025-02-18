@@ -1,0 +1,47 @@
+{% extends 'core/base.html' %}
+
+{% block header %}Detailed Statistics{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold text-gray-900 mb-8">Recruitment Statistics</h1>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- New Recruiting Processes -->
+        <div class="bg-blue-50 rounded-xl shadow-sm p-6">
+            <h3 class="text-sm font-medium text-gray-500">New Recruiting Processes</h3>
+            <p class="mt-2 text-3xl font-semibold text-gray-900">{{ stats.new_processes }}</p>
+        </div>
+
+        <!-- Candidates in Phone interviews -->
+        <div class="bg-blue-50 rounded-xl shadow-sm p-6">
+            <h3 class="text-sm font-medium text-gray-500">Candidates in Phone interviews</h3>
+            <p class="mt-2 text-3xl font-semibold text-blue-600">{{ stats.phone_interview }}</p>
+        </div>
+
+        <!-- Candidates in Client interviews -->
+        <div class="bg-purple-50 rounded-xl shadow-sm p-6">
+            <h3 class="text-sm font-medium text-gray-500">Candidates in Client interviews</h3>
+            <p class="mt-2 text-3xl font-semibold text-purple-600">{{ stats.client_interview }}</p>
+        </div>
+
+        <!-- Candidates waiting for Validation -->
+        <div class="bg-orange-50 rounded-xl shadow-sm p-6">
+            <h3 class="text-sm font-medium text-gray-500">Candidates waiting for Validation</h3>
+            <p class="mt-2 text-3xl font-semibold text-orange-600">{{ stats.validation }}</p>
+        </div>
+
+        <!-- Candidates waiting for feedback -->
+        <div class="bg-green-50 rounded-xl shadow-sm p-6">
+            <h3 class="text-sm font-medium text-gray-500">Candidates waiting for feedback</h3>
+            <p class="mt-2 text-3xl font-semibold text-green-600">{{ stats.waiting_feedback }}</p>
+        </div>
+
+        <!-- Hired -->
+        <div class="bg-emerald-50 rounded-xl shadow-sm p-6">
+            <h3 class="text-sm font-medium text-gray-500">Hired</h3>
+            <p class="mt-2 text-3xl font-semibold text-emerald-600">{{ stats.hired }}</p>
+        </div>
+    </div>
+</div>
+{% endblock %} 
