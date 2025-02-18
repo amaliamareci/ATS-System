@@ -1626,3 +1626,11 @@ def save_pipeline_config(request):
             'success': False,
             'error': str(e)
         })
+
+@login_required
+def candidate_profile(request, pk):
+    candidate = get_object_or_404(Candidate, pk=pk)
+    context = {
+        'candidate': candidate,
+    }
+    return render(request, 'core/candidate_profile.html', context)
