@@ -1,5 +1,10 @@
 from django import forms
-from .models import Candidate, Position, Client, Meeting, Recruiter, RecruitingProcess, Competency, Language, PipelineStage, PipelineSubStatus
+from candidates.models import Candidate, Competency, Language
+from positions.models import Position
+from clients.models import Client
+from meetings.models import Meeting
+from recruiters.models import Recruiter
+from recruitment.models import RecruitingProcess, PipelineStage, PipelineSubStatus
 
 class CandidateForm(forms.ModelForm):
     positions = forms.ModelChoiceField(

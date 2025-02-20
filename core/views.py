@@ -1,6 +1,12 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy, reverse
-from .models import Candidate, Position, Client, Meeting, Recruiter, RecruitingProcess, Competency, Language, RejectionEmail, Comment, PipelineStage, PipelineSubStatus, StatusChange
+from candidates.models import Candidate, Competency, Language
+from positions.models import Position
+from clients.models import Client
+from meetings.models import Meeting
+from recruiters.models import Recruiter
+from recruitment.models import RecruitingProcess, PipelineStage, PipelineSubStatus, StatusChange
+from communications.models import RejectionEmail, Comment
 from .forms import CandidateForm, PositionForm, ClientForm, MeetingForm, RecruiterForm, RecruitingProcessForm
 from datetime import datetime, timedelta
 from django.utils import timezone
@@ -26,6 +32,7 @@ from django.contrib.auth.decorators import login_required
 from django import forms
 from django.contrib import messages
 from django.core.serializers.json import DjangoJSONEncoder
+from django.db.models import Count, Q, Subquery, OuterRef
 
 # Create your views here.
 
@@ -244,28 +251,71 @@ def meeting_calendar(request):
 
 @login_required
 def active_positions(request):
-    # Get all clients with their active positions
+    # Get all clients with their positions
     clients = Client.objects.prefetch_related(
-        models.Prefetch(
-            'positions',
-            queryset=Position.objects.filter(status='open').order_by('title'),
-            to_attr='active_positions'
-        )
-    ).order_by('name')
-    
-    # Calculate totals for each client and position
-    total_open_positions = 0
+        'positions',
+        'positions__recruitingprocess_set',
+        'positions__recruitingprocess_set__candidate',
+        'positions__recruitingprocess_set__candidate__consultant'
+    ).all()
+
+    print("Debug: Starting position processing")  # Debug print
+
+    # Calculate total open positions
+    total_open_positions = Position.objects.filter(status='open').count()
+    print(f"Debug: Found {total_open_positions} open positions")  # Debug print
+
+    # Process each client's positions
     for client in clients:
-        client.positions_count = len(client.active_positions)
-        total_open_positions += client.positions_count
+        print(f"\nDebug: Processing client: {client.name}")  # Debug print
+        
+        # Filter active positions for this client
+        client.active_positions = client.positions.filter(status='open').annotate(
+            in_process_count=Count(
+                'recruitingprocess',
+                filter=~Q(recruitingprocess__stage__key__in=['offered', 'rejected'])
+            ),
+            hired_count=Count(
+                'recruitingprocess',
+                filter=Q(recruitingprocess__stage__key='offered')
+            ),
+            candidate_count=Count('recruitingprocess', distinct=True)
+        )
+
+        # Get consultants for each position
         for position in client.active_positions:
-            position.in_process_count = position.get_in_process_count()
-            position.hired_count = position.get_hired_count()
+            print(f"\nDebug: Processing position: {position.title}")  # Debug print
+            
+            # Get recruiting processes for this position
+            recruiting_processes = position.recruitingprocess_set.select_related(
+                'candidate',
+                'candidate__consultant'
+            ).all()
+            
+            print(f"Debug: Found {recruiting_processes.count()} recruiting processes")  # Debug print
+            
+            # Get unique consultants from candidates
+            consultants = []
+            for rp in recruiting_processes:
+                print(f"Debug: Processing recruiting process {rp.id}")  # Debug print
+                if rp.candidate:
+                    print(f"Debug: Found candidate: {rp.candidate.first_name} {rp.candidate.last_name}")  # Debug print
+                    if rp.candidate.consultant:
+                        consultant = rp.candidate.consultant
+                        print(f"Debug: Found consultant: {consultant.first_name} {consultant.last_name}")  # Debug print
+                        if consultant not in consultants:
+                            consultants.append(consultant)
+                            print(f"Debug: Added consultant to list")  # Debug print
+            
+            position.consultants = consultants
+            position.consultant_count = len(consultants)
+            print(f"Debug: Position has {len(consultants)} consultants")  # Debug print
 
     context = {
         'clients': clients,
         'total_open_positions': total_open_positions,
     }
+    
     return render(request, 'core/active_positions.html', context)
 
 def candidate_edit(request, pk):
@@ -1404,7 +1454,7 @@ def candidate_delete(request, pk):
     return JsonResponse({'success': False, 'error': 'Invalid request method'})
 
 def advanced_search(request):
-    from .models import Candidate, Competency, Language
+    from candidates.models import Candidate, Competency, Language
     
     # Get all skills and languages for the form
     all_skills = Competency.objects.all().order_by('name')

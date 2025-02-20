@@ -44,6 +44,14 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django_browser_reload',
     'core.apps.CoreConfig',
+    'candidates.apps.CandidatesConfig',
+    'positions.apps.PositionsConfig',
+    'clients.apps.ClientsConfig',
+    'recruitment.apps.RecruitmentConfig',
+    'meetings.apps.MeetingsConfig',
+    'recruiters.apps.RecruitersConfig',
+    'communications.apps.CommunicationsConfig',
+    'analytics.apps.AnalyticsConfig',
 ]
 
 MIDDLEWARE = [

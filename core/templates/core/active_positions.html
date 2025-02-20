@@ -3,67 +3,220 @@
 {% block header %}Active Positions{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
+<div class="container mx-auto px-6 py-8">
+    <!-- Header -->
     <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold">Active Job Positions</h1>
+        <h1 class="text-2xl font-bold text-gray-900">Active Job Positions</h1>
         <div class="flex items-center space-x-4">
-            <input type="text" placeholder="Search positions..." class="px-4 py-2 border rounded-lg">
-            <select class="px-4 py-2 border rounded-lg">
-                <option>Sort by: Newest</option>
-                <option>Sort by: Oldest</option>
-            </select>
-        </div>
-    </div>
-
-    <div class="flex space-x-4 mb-6">
-        <button class="px-4 py-2 bg-blue-100 text-blue-700 rounded-full">All Positions ({{ total_open_positions }})</button>
-        <button class="px-4 py-2 hover:bg-gray-100 rounded-full">Active ({{ total_open_positions }})</button>
-        <button class="px-4 py-2 hover:bg-gray-100 rounded-full">On Hold (0)</button>
-        <button class="px-4 py-2 hover:bg-gray-100 rounded-full">Closed (0)</button>
-    </div>
-
-    {% for client in clients %}
-    <div class="mb-8">
-        <div class="flex items-center mb-4">
-            <h2 class="text-xl font-semibold">{{ client.name }}</h2>
-            <span class="ml-2 text-gray-500">{{ client.positions_count }} Active Positions</span>
-        </div>
-
-        <div class="space-y-4">
-            {% for position in client.active_positions %}
-            <div class="bg-white rounded-lg shadow p-4">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <h3 class="font-medium">
-                            <a href="{% url 'position_recruiting_process' position.id %}" class="text-blue-600 hover:text-blue-800">
-                                {{ position.title }}
-                            </a>
-                        </h3>
-                        <div class="text-sm text-gray-500 mt-1">
-                            <span>{{ position.created_at|date:"d/m/Y" }}</span>
-                            <span class="mx-2">•</span>
-                            <span>{{ position.in_process_count }} Candidates</span>
-                            <span class="mx-2">•</span>
-                            <span>{{ position.hired_count }} Hired</span>
-                        </div>
-                    </div>
-                    <div class="flex items-center space-x-2">
-                        <span class="px-2 py-1 text-sm rounded-full {% if position.status == 'open' %}bg-green-100 text-green-800{% endif %}">
-                            Active
-                        </span>
-                    </div>
+            <!-- Search Bar -->
+            <div class="relative">
+                <input type="text" 
+                       id="searchInput"
+                       placeholder="Search positions..." 
+                       class="w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <div class="absolute left-3 top-2.5 text-gray-400">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
                 </div>
             </div>
-            {% endfor %}
+            <!-- Sort Dropdown -->
+            <div class="relative">
+                <select id="sortSelect" class="appearance-none pl-4 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white">
+                    <option value="newest">Sort by: Newest</option>
+                    <option value="oldest">Sort by: Oldest</option>
+                    <option value="most_candidates">Sort by: Most Candidates</option>
+                    <option value="least_candidates">Sort by: Least Candidates</option>
+                </select>
+                <div class="absolute right-3 top-3 text-gray-400 pointer-events-none">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </div>
+            </div>
         </div>
     </div>
-    {% endfor %}
+
+    <!-- Tabs -->
+    <div class="border-b border-gray-200 mb-6">
+        <nav class="flex space-x-8">
+            <button class="px-1 py-4 text-sm font-medium text-primary-600 border-b-2 border-primary-500">
+                All Positions ({{ total_open_positions }})
+            </button>
+            <button class="px-1 py-4 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                Active ({{ total_open_positions }})
+            </button>
+            <button class="px-1 py-4 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                On Hold (0)
+            </button>
+            <button class="px-1 py-4 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                Closed (0)
+            </button>
+        </nav>
+    </div>
+
+    <!-- Client Groups -->
+    <div class="space-y-8">
+        {% for client in clients %}
+        <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+            <!-- Client Header -->
+            <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+                <button class="w-full flex items-center justify-between text-left" 
+                        onclick="toggleClientPositions('{{ client.id }}')">
+                    <div class="flex items-center space-x-3">
+                        <h2 class="text-lg font-semibold text-gray-900">{{ client.name }}</h2>
+                        <span class="text-sm text-gray-500">{{ client.active_positions|length }} Active Positions</span>
+                    </div>
+                    <svg class="w-5 h-5 text-gray-400 transform transition-transform duration-200" 
+                         id="arrow-{{ client.id }}"
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Positions List -->
+            <div id="positions-{{ client.id }}" class="divide-y divide-gray-200">
+                {% for position in client.active_positions %}
+                <div class="p-6">
+                    <div class="space-y-2">
+                        <!-- First Row: Position Title and Status -->
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-medium text-gray-900">
+                                <a href="{% url 'position_recruiting_process' position.id %}" 
+                                   class="hover:text-primary-600">
+                                    {{ position.title }}
+                                </a>
+                            </h3>
+                            <span class="px-2.5 py-0.5 rounded-full text-sm font-medium
+                                {% if position.status == 'open' %}bg-green-100 text-green-800
+                                {% elif position.status == 'hold' %}bg-yellow-100 text-yellow-800
+                                {% else %}bg-red-100 text-red-800{% endif %}">
+                                {{ position.get_status_display }}
+                            </span>
+                        </div>
+
+                        <!-- Second Row: Metadata -->
+                        <div class="flex items-center space-x-6 text-sm text-gray-500">
+                            <div class="flex items-center">
+                                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                                {{ position.created_at|date:"d/m/Y" }}
+                            </div>
+                            <div class="flex items-center">
+                                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                </svg>
+                                {{ position.candidate_count }} Candidates
+                            </div>
+                            <div class="flex items-center">
+                                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                          d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+                                </svg>
+                                {{ position.hired_count }} Hired
+                            </div>
+                        </div>
+
+                        <!-- Third Row: Recruiters (Consultants) -->
+                        <div class="flex items-center space-x-2">
+                            <div class="flex -space-x-1">
+                                {% for consultant in position.consultants %}
+                                    <!-- Debug info -->
+                                    {% comment %}
+                                    Consultant: {{ consultant.first_name }} {{ consultant.last_name }}
+                                    {% endcomment %}
+                                    
+                                    <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium bg-blue-100 text-blue-600 ring-2 ring-white">
+                                        {{ consultant.first_name|slice:":1" }}{{ consultant.last_name|slice:":1" }}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            <span class="text-sm text-gray-500">
+                                {% if position.consultant_count == 0 %}
+                                    No Recruiters
+                                {% elif position.consultant_count == 1 %}
+                                    1 Recruiter
+                                {% else %}
+                                    {{ position.consultant_count }} Recruiters
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="text-center py-12">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">No positions found</h3>
+            <p class="mt-1 text-sm text-gray-500">Get started by creating a new position.</p>
+            <div class="mt-6">
+                <a href="{% url 'position_create' %}" 
+                   class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                    </svg>
+                    Add Position
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
 </div>
 
 <script>
-    // Preserve HTMX functionality
-    document.body.addEventListener('htmx:configRequest', (event) => {
-        event.detail.headers['X-CSRFToken'] = '{{ csrf_token }}';
+function toggleClientPositions(clientId) {
+    const positionsDiv = document.getElementById(`positions-${clientId}`);
+    const arrow = document.getElementById(`arrow-${clientId}`);
+    
+    if (positionsDiv.style.display === 'none') {
+        positionsDiv.style.display = 'block';
+        arrow.classList.remove('rotate-180');
+    } else {
+        positionsDiv.style.display = 'none';
+        arrow.classList.add('rotate-180');
+    }
+}
+
+// Initialize search functionality
+document.getElementById('searchInput').addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const positions = document.querySelectorAll('[id^="positions-"] > div');
+    
+    positions.forEach(position => {
+        const text = position.textContent.toLowerCase();
+        position.style.display = text.includes(searchTerm) ? 'block' : 'none';
     });
+});
+
+// Initialize sort functionality
+document.getElementById('sortSelect').addEventListener('change', function(e) {
+    const sortBy = e.target.value;
+    const clientGroups = document.querySelectorAll('[id^="positions-"]');
+    
+    clientGroups.forEach(group => {
+        const positions = Array.from(group.children);
+        positions.sort((a, b) => {
+            if (sortBy === 'newest') {
+                return new Date(b.dataset.date) - new Date(a.dataset.date);
+            } else if (sortBy === 'oldest') {
+                return new Date(a.dataset.date) - new Date(b.dataset.date);
+            } else if (sortBy === 'most_candidates') {
+                return parseInt(b.dataset.candidates) - parseInt(a.dataset.candidates);
+            } else {
+                return parseInt(a.dataset.candidates) - parseInt(b.dataset.candidates);
+            }
+        });
+        positions.forEach(pos => group.appendChild(pos));
+    });
+});
 </script>
 {% endblock %} 
