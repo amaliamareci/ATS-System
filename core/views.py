@@ -36,9 +36,53 @@ from django.db.models import Count, Q, Subquery, OuterRef
 
 # Create your views here.
 
+@login_required
 def candidate_list(request):
+    # Get filter parameters
+    search_query = request.GET.get('candidateSearch', '')
+    selected_source = request.GET.get('source', '')
+    selected_skills = request.GET.getlist('skills')
+
+    # Start with all candidates
     candidates = Candidate.objects.all().order_by('-created_at')
-    return render(request, 'core/candidate_list.html', {'candidates': candidates})
+
+    # Apply source filter
+    if selected_source and selected_source != 'all':
+        candidates = candidates.filter(source=selected_source)
+
+    # Apply skills filter
+    if selected_skills:
+        for skill_id in selected_skills:
+            candidates = candidates.filter(competencies__id=skill_id)
+
+    # Apply search filter
+    if search_query:
+        candidates = candidates.filter(
+            Q(first_name__icontains=search_query) |
+            Q(last_name__icontains=search_query) |
+            Q(email__icontains=search_query)
+        )
+
+    # Get all skills for the filter
+    skills = Competency.objects.all().order_by('name')
+    
+    # Define available sources
+    all_sources = ['LinkedIn', 'Jobs', 'Internal']
+
+    context = {
+        'candidates': candidates,
+        'skills': skills,
+        'all_sources': all_sources,
+        'selected_source': selected_source,
+        'selected_skills': selected_skills,
+    }
+
+    # If it's an HTMX request, return only the candidate cards
+    if request.headers.get('HX-Request'):
+        return render(request, 'core/partials/candidate_cards.html', context)
+    
+    # Otherwise return the full template
+    return render(request, 'core/candidate_list.html', context)
 
 def position_list(request):
     positions = Position.objects.all().order_by('-created_at')

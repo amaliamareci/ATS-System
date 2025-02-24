@@ -32,6 +32,13 @@ class PipelineSubStatus(models.Model):
     def __str__(self):
         return f"{self.stage.name} - {self.name}"
 
+class RecruitingProcessManager(models.Manager):
+    def active(self):
+        return self.exclude(stage__key__in=['offered', 'rejected'])
+    
+    def completed(self):
+        return self.filter(stage__key__in=['offered', 'rejected'])
+
 class RecruitingProcess(models.Model):
     candidate = models.ForeignKey('candidates.Candidate', on_delete=models.CASCADE)
     position = models.ForeignKey('positions.Position', on_delete=models.CASCADE)
@@ -41,6 +48,8 @@ class RecruitingProcess(models.Model):
     cv_match = models.IntegerField(null=True, blank=True, help_text='CV match percentage')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    objects = RecruitingProcessManager()
 
     def save(self, *args, **kwargs):
         # If this is a new process (no ID yet)
@@ -54,6 +63,12 @@ class RecruitingProcess(models.Model):
 
     def __str__(self):
         return f"{self.candidate} - {self.position}"
+
+    def get_completed_stages_count(self):
+        """Get the number of completed stages in the process"""
+        all_stages = self.position.client.pipeline_stages.all().order_by('order')
+        current_stage_order = self.stage.order
+        return len([stage for stage in all_stages if stage.order < current_stage_order])
 
 class StatusChange(models.Model):
     process = models.ForeignKey(RecruitingProcess, on_delete=models.CASCADE, related_name='status_changes')

@@ -1,0 +1,149 @@
+{% extends 'core/base.html' %}
+
+{% block header %}Candidates{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50 min-h-screen">
+    <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        <!-- Header with Add Button -->
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Candidates</h1>
+                <p class="mt-1 text-sm text-gray-500">{{ candidates.count }} candidates total</p>
+            </div>
+            <a href="{% url 'candidates:candidate_create' %}" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                </svg>
+                Add Candidate
+            </a>
+        </div>
+
+        <div class="flex gap-6">
+            <!-- Left Sidebar - Filters -->
+            <div class="w-64 flex-shrink-0">
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <h2 class="text-lg font-medium text-gray-900 mb-4">Filter Candidates</h2>
+                    <form method="get" class="space-y-6">
+                        <!-- Source Filter -->
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-700 mb-2">Source</h3>
+                            <div class="space-y-2">
+                                <div class="flex items-center">
+                                    <input type="radio" name="source" value="" id="source_all"
+                                           {% if not selected_source %}checked{% endif %}
+                                           class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300">
+                                    <label for="source_all" class="ml-2 text-sm text-gray-700">All Sources</label>
+                                </div>
+                                {% for source in all_sources %}
+                                <div class="flex items-center">
+                                    <input type="radio" name="source" value="{{ source }}" id="source_{{ source|lower }}"
+                                           {% if selected_source == source %}checked{% endif %}
+                                           class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300">
+                                    <label for="source_{{ source|lower }}" class="ml-2 text-sm text-gray-700">{{ source }}</label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Skills Filter -->
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-700 mb-2">Skills</h3>
+                            <div class="space-y-2 max-h-48 overflow-y-auto">
+                                {% for skill in all_skills %}
+                                <div class="flex items-center">
+                                    <input type="checkbox" name="skills" value="{{ skill.name }}" id="skill_{{ skill.id }}"
+                                           {% if skill.name in selected_skills %}checked{% endif %}
+                                           class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
+                                    <label for="skill_{{ skill.id }}" class="ml-2 text-sm text-gray-700">{{ skill.name }}</label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700">
+                            Apply Filters
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Right Content - Candidate List -->
+            <div class="flex-1">
+                <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+                    <!-- Search Bar -->
+                    <div class="p-4 border-b border-gray-200">
+                        <div class="relative">
+                            <input type="text" id="searchInput" placeholder="Search candidates..."
+                                   class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            <div class="absolute left-3 top-2.5 text-gray-400">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Candidate Cards -->
+                    <div class="divide-y divide-gray-200">
+                        {% for candidate in candidates %}
+                        <a href="{% url 'candidates:candidate_profile' pk=candidate.id %}" class="block hover:bg-gray-50">
+                            <div class="p-6">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-4">
+                                        <div class="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 text-lg font-medium">
+                                            {{ candidate.first_name.0 }}{{ candidate.last_name.0 }}
+                                        </div>
+                                        <div>
+                                            <h3 class="text-lg font-medium text-gray-900">
+                                                {{ candidate.first_name }} {{ candidate.last_name }}
+                                            </h3>
+                                            <div class="text-sm text-gray-500">{{ candidate.email }}</div>
+                                            {% if candidate.competencies.all %}
+                                            <div class="mt-2 flex flex-wrap gap-2">
+                                                {% for skill in candidate.competencies.all %}
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                    {{ skill.name }}
+                                                </span>
+                                                {% endfor %}
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center space-x-2">
+                                        <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                            {{ candidate.source }}
+                                        </span>
+                                        <button class="text-gray-400 hover:text-gray-500">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                        {% empty %}
+                        <div class="p-6 text-center">
+                            <p class="text-gray-500">No candidates found matching your filters.</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('searchInput').addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const candidateCards = document.querySelectorAll('.divide-y > div');
+    
+    candidateCards.forEach(card => {
+        const text = card.textContent.toLowerCase();
+        card.style.display = text.includes(searchTerm) ? 'block' : 'none';
+    });
+});
+</script>
+{% endblock %} 

@@ -2,6 +2,7 @@
 {% load static %}
 
 {% block content %}
+{% csrf_token %}
 <div class="bg-gray-50 min-h-screen p-6">
     <div class="grid grid-cols-3 gap-6">
         <!-- Left Column (2/3) -->
@@ -23,37 +24,22 @@
                             </div>
                             <div class="text-sm text-gray-500">
                                 Last Updated<br>
-                                Jan 25, 2024
+                                {{ candidate.created_at|date:"M d, Y" }}
                             </div>
                         </div>
                         <div class="flex items-center mt-2 space-x-4">
-                            <span class="text-gray-600">• Bucharest, RO</span>
-                            <span class="text-gray-600">• Available Worldwide</span>
-                        </div>
-                        <div class="flex items-center mt-2 space-x-3">
-                            <a href="#" class="text-gray-600 hover:text-gray-900">
-                                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
-                                </svg>
-                            </a>
-                            <a href="#" class="text-gray-600 hover:text-gray-900">
-                                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-                                </svg>
-                            </a>
-                            <a href="#" class="text-gray-600 hover:text-gray-900">
-                                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M12 2c5.514 0 10 4.486 10 10s-4.486 10-10 10-10-4.486-10-10 4.486-10 10-10zm0-2c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm-2 8c0 .557-.447 1.008-1 1.008s-1-.45-1-1.008c0-.557.447-1.008 1-1.008s1 .452 1 1.008zm0 2h-2v6h2v-6zm3 0h-2v6h2v-2.861c0-1.722 2.002-1.881 2.002 0v2.861h1.998v-3.359c0-3.284-3.128-3.164-4-1.548v-1.093z"/>
-                                </svg>
-                            </a>
+                            <span class="text-gray-600">• {{ candidate.source }}</span>
+                            <span class="text-gray-600">• {{ candidate.status|title }}</span>
                         </div>
                         <div class="flex items-center mt-3 space-x-3">
-                            <a href="#" class="inline-flex items-center px-3 py-1 text-sm text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
+                            {% if candidate.resume %}
+                            <a href="{{ candidate.resume.url }}" class="inline-flex items-center px-3 py-1 text-sm text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
                                 View CV
                             </a>
-                            <a href="#" class="inline-flex items-center px-3 py-1 text-sm text-blue-600 bg-blue-100 rounded-md hover:bg-blue-200">
+                            <a href="{{ candidate.resume.url }}" download class="inline-flex items-center px-3 py-1 text-sm text-blue-600 bg-blue-100 rounded-md hover:bg-blue-200">
                                 Download CV
                             </a>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -69,8 +55,8 @@
                         <div class="text-gray-900">{{ candidate.phone }}</div>
                     </div>
                     <div>
-                        <div class="text-sm text-gray-500">Total Experience</div>
-                        <div class="text-gray-900">8+ years</div>
+                        <div class="text-sm text-gray-500">Source</div>
+                        <div class="text-gray-900">{{ candidate.source }}</div>
                     </div>
                 </div>
 
@@ -86,91 +72,218 @@
 
                 <!-- Technical Skills -->
                 <div>
-                    <h2 class="text-lg font-medium text-gray-900 mb-4">Technical Skills <span class="text-sm text-blue-600 font-normal">25 skills assessed</span></h2>
+                    <h2 class="text-lg font-medium text-gray-900 mb-4">Technical Skills</h2>
                     
-                    <!-- Frontend Development -->
+                    {% if candidate.competencies.exists %}
                     <div class="mb-6">
-                        <h3 class="text-sm font-medium text-gray-700 mb-3">Frontend Development</h3>
+                        <h3 class="text-sm font-medium text-gray-700 mb-3">Competencies</h3>
                         <div class="flex flex-wrap gap-2">
-                            <span class="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm">React.js</span>
-                            <span class="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm">Vue.js</span>
-                            <span class="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm">Angular</span>
-                            <span class="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm">TypeScript</span>
-                            <span class="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm">JavaScript</span>
+                            {% for competency in candidate.competencies.all %}
+                            <span class="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm">{{ competency.name }}</span>
+                            {% endfor %}
                         </div>
                     </div>
+                    {% endif %}
 
-                    <!-- Backend Development -->
-                    <div class="mb-6">
-                        <h3 class="text-sm font-medium text-gray-700 mb-3">Backend Development</h3>
-                        <div class="flex flex-wrap gap-2">
-                            <span class="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm">Node.js</span>
-                            <span class="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm">Python</span>
-                            <span class="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm">Java</span>
-                            <span class="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm">GraphQL</span>
-                        </div>
-                    </div>
-
-                    <!-- Cloud & DevOps -->
+                    {% if candidate.languages.exists %}
                     <div>
-                        <h3 class="text-sm font-medium text-gray-700 mb-3">Cloud & DevOps</h3>
+                        <h3 class="text-sm font-medium text-gray-700 mb-3">Languages</h3>
                         <div class="flex flex-wrap gap-2">
-                            <span class="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm">AWS</span>
-                            <span class="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm">Docker</span>
-                            <span class="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm">Kubernetes</span>
+                            {% for language in candidate.languages.all %}
+                            <span class="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm">{{ language.name }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <hr class="my-6 border-gray-200">
+
+
+                <!-- Application History -->
+                <div>
+                    <h2 class="text-lg font-medium text-gray-900 mb-4">Application History</h2>
+                    
+                    <!-- Current Applications -->
+                    <div class="mb-6">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-sm font-medium text-gray-700">Current Applications</h3>
+                            <span class="text-sm text-blue-600">{{ candidate.recruitingprocess_set.active.count }} Active Processes</span>
+                        </div>
+                        <div class="space-y-4">
+                            {% for process in candidate.recruitingprocess_set.all %}
+                            {% if process.stage.key not in 'offered,rejected' %}
+                            <div class="bg-white border border-gray-200 rounded-lg p-4">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <div class="flex items-center gap-2">
+                                            <h4 class="text-base font-medium text-gray-900">{{ process.position.title }}</h4>
+                                            <span class="px-2 py-0.5 text-sm bg-blue-100 text-blue-700 rounded">{{ process.stage.name }}</span>
+                                        </div>
+                                        <p class="text-sm text-gray-500 mt-1">{{ process.position.client.name }}</p>
+                                        <div class="mt-2 text-sm text-gray-500">
+                                            Started {{ process.created_at|date:"M j, Y" }}
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-sm font-medium text-green-600">{{ process.cv_match }}% Match</div>
+                                        <div class="text-xs text-gray-500 mt-1">{{ process.get_completed_stages_count }}/{{ process.position.client.pipeline_stages.count }} Stages Complete</div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Past Applications -->
+                    <div>
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-sm font-medium text-gray-700">Past Applications</h3>
+                            <span class="text-sm text-gray-600">{{ candidate.recruitingprocess_set.completed.count }} Completed Processes</span>
+                        </div>
+                        <div class="space-y-4">
+                            {% for process in candidate.recruitingprocess_set.all %}
+                            {% if process.stage.key in 'offered,rejected' %}
+                            <div class="bg-white border border-gray-200 rounded-lg p-4">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <div class="flex items-center gap-2">
+                                            <h4 class="text-base font-medium text-gray-900">{{ process.position.title }}</h4>
+                                            {% if process.stage.key == 'offered' %}
+                                            <span class="px-2 py-0.5 text-sm bg-green-100 text-green-700 rounded">Accepted</span>
+                                            {% else %}
+                                            <span class="px-2 py-0.5 text-sm bg-red-100 text-red-700 rounded">Rejected</span>
+                                            {% endif %}
+                                        </div>
+                                        <p class="text-sm text-gray-500 mt-1">{{ process.position.client.name }}</p>
+                                        <div class="mt-2 text-sm text-gray-500">
+                                            {{ process.created_at|date:"M Y" }} - {{ process.updated_at|date:"M Y" }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% endfor %}
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Right Column (1/3) - Recruiter Notes -->
+        <!-- Right Column (1/3) - Recruiter notes -->
         <div class="col-span-1">
             <div class="bg-white rounded-lg shadow-sm p-6">
-                <div class="flex justify-between items-center mb-6">
+                <div class="flex items-center justify-between mb-4">
                     <h2 class="text-lg font-medium text-gray-900">Recruiter Notes</h2>
-                    <button class="text-blue-600 hover:text-blue-700">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    <button onclick="addTechnicalNote()" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-primary-600 bg-primary-50 rounded-md hover:bg-primary-100">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                         </svg>
+                        Add Note
                     </button>
                 </div>
 
-                <div class="space-y-4">
-                    <!-- Note Item -->
-                    <div class="bg-gray-50 rounded-lg p-4">
-                        <div class="flex items-start justify-between">
-                            <div class="flex items-start space-x-3">
-                                <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium">
-                                    MH
-                                </div>
-                                <div>
-                                    <h3 class="text-sm font-medium text-gray-900">Mark Harris</h3>
-                                    <p class="text-sm text-gray-500">Jan 15, 2024</p>
-                                    <p class="mt-2 text-gray-600">Strong technical background with leadership experience. Perfect fit for senior roles.</p>
-                                </div>
+                <!-- Technical Notes List -->
+                <div class="space-y-3">
+                    {% for note in candidate.technical_notes.all %}
+                    <div class="p-4 rounded-lg {% cycle 'bg-yellow-50' 'bg-blue-50' 'bg-purple-50' %}">
+                        <p class="text-gray-900 text-sm mb-2">{{ note.content }}</p>
+                        <div class="flex items-center justify-between text-xs text-gray-500">
+                            <div class="flex items-center">
+                                <span>Added by {% if note.author == request.user %}you{% else %}{{ note.author.get_full_name|default:note.author.username }}{% endif %}</span>
+                                <span class="mx-2">•</span>
+                                <span>{{ note.created_at|date:"M d, Y" }}</span>
                             </div>
+                            {% if note.author == request.user %}
+                            <button onclick="deleteTechnicalNote({{ note.id }})" class="text-gray-400 hover:text-gray-600">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                            {% endif %}
                         </div>
                     </div>
+                    {% endfor %}
+                </div>
 
-                    <!-- Note Item -->
-                    <div class="bg-gray-50 rounded-lg p-4">
-                        <div class="flex items-start justify-between">
-                            <div class="flex items-start space-x-3">
-                                <div class="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-medium">
-                                    JC
-                                </div>
-                                <div>
-                                    <h3 class="text-sm font-medium text-gray-900">James Chen</h3>
-                                    <p class="text-sm text-gray-500">Jan 15, 2024</p>
-                                    <p class="mt-2 text-gray-600">Excellent communication skills. Demonstrated clear understanding of system design during screening.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <!-- Add Note Form -->
+                <div class="mt-4">
+                    <textarea id="technicalNoteContent" 
+                              rows="3" 
+                              class="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 text-sm" 
+                              placeholder="Add a note..."></textarea>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+
+<script>
+function addTechnicalNote() {
+    const content = document.getElementById('technicalNoteContent').value;
+    if (!content.trim()) {
+        alert('Please enter a note');
+        return;
+    }
+
+    fetch(`/candidates/{{ candidate.id }}/technical-notes/add/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: `content=${encodeURIComponent(content)}`
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            throw new Error(data.error || 'Failed to add note');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to add note: ' + error.message);
+    });
+}
+
+function deleteTechnicalNote(noteId) {
+    if (!confirm('Are you sure you want to delete this note?')) return;
+
+    fetch(`/candidates/{{ candidate.id }}/technical-notes/${noteId}/delete/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            throw new Error(data.error || 'Failed to delete note');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to delete note: ' + error.message);
+    });
+}
+</script>
 {% endblock %} 

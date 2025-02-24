@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
-from .models import Candidate, Competency, Language
+from .models import Candidate, Competency, Language, TechnicalNote
 from .forms import CandidateForm
 from django.core.exceptions import ValidationError
 import json
@@ -9,8 +9,35 @@ from django.db import models
 
 @login_required
 def candidate_list(request):
-    candidates = Candidate.objects.all().order_by('-created_at')
-    return render(request, 'candidates/candidate_list.html', {'candidates': candidates})
+    # Get filter parameters
+    selected_source = request.GET.get('source')
+    selected_skills = request.GET.getlist('skills')
+    
+    # Start with all candidates
+    candidates = Candidate.objects.all()
+    
+    # Apply source filter
+    if selected_source:
+        candidates = candidates.filter(source=selected_source)
+    
+    # Apply skills filter
+    if selected_skills:
+        for skill in selected_skills:
+            candidates = candidates.filter(competencies__name=skill)
+    
+    # Get all available skills and sources for filters
+    all_skills = Competency.objects.all().order_by('name')
+    all_sources = [choice[0] for choice in Candidate.source.field.choices]
+    
+    context = {
+        'candidates': candidates.order_by('-created_at'),
+        'all_skills': all_skills,
+        'all_sources': all_sources,
+        'selected_source': selected_source,
+        'selected_skills': selected_skills,
+    }
+    
+    return render(request, 'candidates/candidate_list.html', context)
 
 @login_required
 def candidate_create(request):
@@ -100,3 +127,44 @@ def parse_cv(request):
         return JsonResponse({'success': True, 'data': parsed_data})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+def add_technical_note(request, candidate_id):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Only POST method is allowed'}, status=405)
+    
+    candidate = get_object_or_404(Candidate, pk=candidate_id)
+    content = request.POST.get('content')
+    
+    if not content:
+        return JsonResponse({'error': 'Note content is required'}, status=400)
+    
+    note = TechnicalNote.objects.create(
+        candidate=candidate,
+        author=request.user,
+        content=content
+    )
+    
+    return JsonResponse({
+        'success': True,
+        'note': {
+            'id': note.id,
+            'content': note.content,
+            'author': f"{note.author.first_name} {note.author.last_name}",
+            'created_at': note.created_at.strftime('%Y-%m-%d %H:%M:%S')
+        }
+    })
+
+@login_required
+def delete_technical_note(request, candidate_id, note_id):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Only POST method is allowed'}, status=405)
+    
+    note = get_object_or_404(TechnicalNote, pk=note_id, candidate_id=candidate_id)
+    
+    # Only allow the author to delete their own notes
+    if note.author != request.user:
+        return JsonResponse({'error': 'Not authorized to delete this note'}, status=403)
+    
+    note.delete()
+    return JsonResponse({'success': True})

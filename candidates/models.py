@@ -1,5 +1,6 @@
 from django.db import models
 from django.core.validators import FileExtensionValidator
+from positions.models import Position
 
 # Create your models here.
 
@@ -58,3 +59,16 @@ class Candidate(models.Model):
     def get_current_process(self, position):
         """Get the current recruiting process for a specific position"""
         return self.recruitingprocess_set.filter(position=position).first()
+
+class TechnicalNote(models.Model):
+    candidate = models.ForeignKey(Candidate, on_delete=models.CASCADE, related_name='technical_notes')
+    author = models.ForeignKey('auth.User', on_delete=models.CASCADE)
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'Technical note by {self.author} on {self.candidate}'
