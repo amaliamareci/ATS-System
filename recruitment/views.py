@@ -5,7 +5,9 @@ from .models import RecruitingProcess, PipelineStage, PipelineSubStatus, StatusC
 from .forms import RecruitingProcessForm
 from positions.models import Position
 from candidates.models import Candidate
-import json
+from meetings.models import Meeting
+from assessments.models import CandidateAssessment
+from core.views import get_rejection_email_template
 
 @login_required
 def recruiting_process_list(request):
@@ -18,7 +20,7 @@ def recruiting_process_create(request):
         form = RecruitingProcessForm(request.POST)
         if form.is_valid():
             process = form.save()
-            return redirect('candidate_recruiting_process', 
+            return redirect('recruitment:candidate_process', 
                           position_id=process.position.id,
                           candidate_id=process.candidate.id)
     else:
@@ -32,7 +34,7 @@ def recruiting_process_edit(request, pk):
         form = RecruitingProcessForm(request.POST, instance=process)
         if form.is_valid():
             form.save()
-            return redirect('candidate_recruiting_process', 
+            return redirect('recruitment:candidate_process', 
                           position_id=process.position.id,
                           candidate_id=process.candidate.id)
     else:
@@ -48,18 +50,80 @@ def position_recruiting_process(request, position_id):
 
 @login_required
 def candidate_recruiting_process(request, position_id, candidate_id):
-    position = get_object_or_404(Position, pk=position_id)
-    candidate = get_object_or_404(Candidate, pk=candidate_id)
-    process = get_object_or_404(RecruitingProcess, position=position, candidate=candidate)
-    return render(request, 'recruitment/candidate_process.html', 
-                 {'position': position, 'candidate': candidate, 'process': process})
+    position = get_object_or_404(Position, id=position_id)
+    candidate = get_object_or_404(Candidate, id=candidate_id)
+    process = get_object_or_404(
+        RecruitingProcess.objects.select_related('assessment'), 
+        candidate=candidate,
+        position=position
+    )
+    
+    if request.method == 'POST':
+        # Handle stage/sub-status update
+        new_stage_id = request.POST.get('stage')
+        new_sub_status_id = request.POST.get('sub_status')
+        
+        if new_stage_id and new_sub_status_id:
+            old_stage = process.stage
+            old_sub_status = process.sub_status
+            
+            # Update process with new stage and sub-status
+            process.stage = get_object_or_404(PipelineStage, id=new_stage_id)
+            process.sub_status = get_object_or_404(PipelineSubStatus, id=new_sub_status_id)
+            process.save()
+            
+            # Record the status change
+            StatusChange.objects.create(
+                process=process,
+                old_stage=old_stage,
+                new_stage=process.stage,
+                old_sub_status=old_sub_status,
+                new_sub_status=process.sub_status
+            )
+        
+        if request.headers.get('HX-Request'):
+            return redirect('recruitment:position_process', position_id=process.position.id)
+        return redirect('recruitment:position_process', position_id=process.position.id)
+    
+    # Get all meetings for this process with recruiter data
+    meetings = Meeting.objects.filter(recruiting_process=process).select_related('recruiter').order_by('-date_time')
+    
+    # Get comments for this process
+    comments = process.comments.select_related('author').all()
+    
+    # Get the rejection email template to the context
+    rejection_email_template = get_rejection_email_template(process)
+    
+    # Get all pipeline stages and sub-statuses for the client
+    pipeline_stages = position.client.pipeline_stages.prefetch_related('sub_statuses').all()
+    
+    # Get or initialize assessment
+    try:
+        assessment = process.assessment
+    except CandidateAssessment.DoesNotExist:
+        assessment = None
+    
+    context = {
+        'position': position,
+        'candidate': candidate,
+        'process': process,
+        'meetings': meetings,
+        'comments': comments,
+        'rejection_email_template': rejection_email_template,
+        'pipeline_stages': pipeline_stages,
+        'assessment': assessment,
+    }
+    
+    if request.headers.get('HX-Request'):
+        return render(request, 'recruitment/partials/candidate_process_content.html', context)
+    return render(request, 'recruitment/candidate_recruiting_process.html', context)
 
 @login_required
 def delete_recruiting_process(request, position_id, process_id):
     process = get_object_or_404(RecruitingProcess, pk=process_id)
     if request.method == 'POST':
         process.delete()
-        return redirect('position_recruiting_process', position_id=position_id)
+        return redirect('recruitment:position_process', position_id=position_id)
     return render(request, 'recruitment/process_confirm_delete.html', {'process': process})
 
 @login_required

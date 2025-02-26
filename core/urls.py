@@ -22,6 +22,7 @@ urlpatterns = [
     path('recruiting-process/<int:pk>/edit/', views.recruiting_process_edit, name='recruiting_process_edit'),
     path('position/<int:position_id>/recruiting-process/', views.position_recruiting_process, name='position_recruiting_process'),
     path('position/<int:position_id>/overview/', views.position_overview, name='position_overview'),
+    path('position/<int:position_id>/candidate/<int:candidate_id>/', views.candidate_recruiting_process, name='candidate_recruiting_process'),
     path('api/position/<int:position_id>/stage/<str:stage_key>/candidates/', views.stage_candidates_api, name='stage_candidates_api'),
     path('api/clients/create/', views.create_client_api, name='create_client_api'),
     path('api/client/pipeline/save', views.save_pipeline_config, name='save_pipeline_config'),

@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'recruiters.apps.RecruitersConfig',
     'communications.apps.CommunicationsConfig',
     'analytics.apps.AnalyticsConfig',
+    'assessments.apps.AssessmentsConfig',
 ]
 
 MIDDLEWARE = [

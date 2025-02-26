@@ -423,7 +423,7 @@ def recruiting_process_create(request):
                 process.stage = first_stage
                 process.sub_status = first_sub_status
                 process.save()
-                return redirect('recruiting_process_list')
+                return redirect('candidate_recruiting_process', position_id=process.position.id, candidate_id=process.candidate.id)
     else:
         # Get position_id from query parameters if it exists
         position_id = request.GET.get('position')
@@ -441,18 +441,20 @@ def recruiting_process_create(request):
         'title': 'Add Recruiting Process'
     })
 
+@login_required
 def recruiting_process_edit(request, pk):
     process = get_object_or_404(RecruitingProcess, pk=pk)
     if request.method == 'POST':
         form = RecruitingProcessForm(request.POST, instance=process)
         if form.is_valid():
             form.save()
-            return redirect('recruiting_process_list')
+            return redirect('candidate_recruiting_process', position_id=process.position.id, candidate_id=process.candidate.id)
     else:
         form = RecruitingProcessForm(instance=process)
     
     return render(request, 'core/recruiting_process_form.html', {
         'form': form,
+        'process': process,
         'title': 'Edit Recruiting Process'
     })
 
@@ -712,8 +714,8 @@ def candidate_recruiting_process(request, position_id, candidate_id):
             )
         
         if request.headers.get('HX-Request'):
-            return redirect('position_recruiting_process', position_id=process.position.id)
-        return redirect('position_recruiting_process', position_id=process.position.id)
+            return redirect('recruitment:position_process', position_id=process.position.id)
+        return redirect('recruitment:position_process', position_id=process.position.id)
     
     # Get all meetings for this process with recruiter data
     meetings = Meeting.objects.filter(recruiting_process=process).select_related('recruiter').order_by('-date_time')
@@ -727,45 +729,11 @@ def candidate_recruiting_process(request, position_id, candidate_id):
     # Get all pipeline stages and sub-statuses for the client
     pipeline_stages = position.client.pipeline_stages.prefetch_related('sub_statuses').all()
     
-    # Ensure stages are ordered correctly
-    if not pipeline_stages.exists():
-        # If no stages exist, create default stages
-        position.client.create_default_pipeline_stages()
-        pipeline_stages = position.client.pipeline_stages.prefetch_related('sub_statuses').all()
-    
-    # Get next possible sub-statuses
-    current_stage = process.stage
-    current_sub_status = process.sub_status
-    next_sub_statuses = []
-    
-    # Get the current stage index (1-based)
-    pipeline_stages = list(pipeline_stages)  # Convert to list for index operations
-    current_stage_index = pipeline_stages.index(current_stage) + 1
-    
-    # Get sub-statuses from current stage that come after current sub-status
-    current_stage_sub_statuses = list(current_stage.sub_statuses.all().order_by('order'))
-    current_index = next((i for i, s in enumerate(current_stage_sub_statuses) if s.id == current_sub_status.id), -1)
-    
-    # Add remaining sub-statuses from current stage
-    if current_index >= 0:
-        next_sub_statuses.extend(current_stage_sub_statuses[current_index + 1:])
-    
-    # If we're at the last sub-status of the current stage or there are no next sub-statuses in current stage,
-    # get the first sub-status of the next stage
-    if current_index == len(current_stage_sub_statuses) - 1 or not next_sub_statuses:
-        # Get next stage by index rather than order field
-        current_stage_idx = pipeline_stages.index(current_stage)
-        if current_stage_idx < len(pipeline_stages) - 1:
-            next_stage = pipeline_stages[current_stage_idx + 1]
-            next_stage_sub_statuses = list(next_stage.sub_statuses.all().order_by('order'))
-            if next_stage_sub_statuses:
-                next_sub_statuses.extend(next_stage_sub_statuses)
-    
-    # Debug information
-    print("Pipeline stages:", [(s.name, s.order) for s in pipeline_stages])
-    print("Current stage:", current_stage.name, current_stage.order)
-    print("Current sub-status:", current_sub_status.name)
-    print("Next sub-statuses:", [f"{s.name} ({s.stage.name})" for s in next_sub_statuses])
+    # Get or initialize assessment
+    try:
+        assessment = process.assessment
+    except CandidateAssessment.DoesNotExist:
+        assessment = None
     
     context = {
         'position': position,
@@ -775,15 +743,12 @@ def candidate_recruiting_process(request, position_id, candidate_id):
         'comments': comments,
         'rejection_email_template': rejection_email_template,
         'pipeline_stages': pipeline_stages,
-        'next_sub_statuses': next_sub_statuses,
-        'current_stage': current_stage,
-        'current_sub_status': current_sub_status,
-        'current_stage_index': current_stage_index
+        'assessment': assessment,
     }
     
     if request.headers.get('HX-Request'):
-        return render(request, 'core/partials/candidate_process_content.html', context)
-    return render(request, 'core/candidate_recruiting_process.html', context)
+        return render(request, 'recruitment/partials/candidate_process_content.html', context)
+    return render(request, 'recruitment/candidate_recruiting_process.html', context)
 
 @login_required
 def search_candidates(request):
@@ -895,13 +860,13 @@ def add_candidate_to_position(request, position_id):
             'error': str(e)
         }, status=500)
 
+@login_required
 def delete_recruiting_process(request, position_id, process_id):
-    process = get_object_or_404(RecruitingProcess, id=process_id)
-    process.delete()
-    
-    if request.headers.get('HX-Request'):
-        return redirect('position_recruiting_process', position_id=position_id)
-    return redirect('position_recruiting_process', position_id=position_id)
+    process = get_object_or_404(RecruitingProcess, pk=process_id)
+    if request.method == 'POST':
+        process.delete()
+        return redirect('recruitment:position_process', position_id=position_id)
+    return render(request, 'core/process_confirm_delete.html', {'process': process})
 
 def search_competencies(request):
     query = request.GET.get('q', '')

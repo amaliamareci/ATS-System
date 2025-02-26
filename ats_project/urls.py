@@ -31,8 +31,9 @@ urlpatterns = [
     path('clients/', include('clients.urls')),
     path('meetings/', include('meetings.urls')),
     path('recruiters/', include('recruiters.urls')),
-    path('recruitment/', include('recruitment.urls')),
+    path('recruitment/', include('recruitment.urls', namespace='recruitment')),
     path('communications/', include('communications.urls')),
+    path('assessments/', include('assessments.urls', namespace='assessments')),
     path('accounts/', include('django.contrib.auth.urls')),
 ]
 

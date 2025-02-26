@@ -1,0 +1,448 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% load assessment_extras %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Toast notification for feedback -->
+    <div id="toast" class="fixed top-4 right-4 z-50 hidden">
+        <div class="bg-green-500 text-white px-4 py-2 rounded shadow-lg flex items-center">
+            <span id="toast-message">Saved successfully</span>
+            <button type="button" class="ml-2" onclick="document.getElementById('toast').classList.add('hidden')">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold">Interview Assessment</h1>
+            <p class="text-gray-600">{{ process.candidate.first_name }} {{ process.candidate.last_name }} - {{ process.position.title }}</p>
+        </div>
+        <div class="flex space-x-4">
+            <button type="button" id="saveAssessment" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                Save Progress
+            </button>
+            <button type="button" id="completeAssessment" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                Complete Assessment
+            </button>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-lg p-6">
+        <form id="assessmentForm" method="POST">
+            {% csrf_token %}
+            
+            <!-- Competency Areas -->
+            {% for area in competency_areas %}
+            <div class="mb-8 competency-section" data-competency-id="{{ area.competency_area__id }}">
+                <h2 class="text-xl font-semibold mb-4">{{ area.competency_area__name }}</h2>
+                
+                <!-- Questions -->
+                {% for item in questions_by_competency|get_item:area.competency_area__id %}
+                <div class="mb-6 question-item" data-question-id="{{ item.question.id }}">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">
+                        {{ item.question.question_text }}
+                    </label>
+                    <div class="mb-2">
+                        <textarea 
+                            name="response_{{ item.question.id }}" 
+                            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            rows="3"
+                            placeholder="Enter your response...">{{ item.response.response_text|default:'' }}</textarea>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="star-rating" data-rating="{{ item.response.rating|default:0 }}">
+                            {% for i in "12345" %}
+                            <button type="button" class="star-btn text-2xl text-gray-400 hover:text-yellow-400 focus:outline-none transition-colors duration-150" data-value="{{ forloop.counter }}">
+                                ★
+                            </button>
+                            {% endfor %}
+                        </div>
+                        <input type="hidden" name="rating_{{ item.question.id }}" class="rating-input" value="{{ item.response.rating|default:'' }}">
+                    </div>
+                </div>
+                {% endfor %}
+                
+                <!-- Competency Score -->
+                <div class="mt-4 border-t pt-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">
+                        Overall Score for {{ area.competency_area__name }} (1-10)
+                    </label>
+                    <div class="flex items-center">
+                        <input type="number" 
+                               name="competency_score_{{ area.competency_area__id }}"
+                               class="competency-score w-24 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               min="1" 
+                               max="10" 
+                               required
+                               value="{{ competency_scores|get_item:area.competency_area__id|default:'' }}"
+                               data-competency-id="{{ area.competency_area__id }}">
+                        <span class="ml-2 text-sm text-gray-500">(1 = Poor, 10 = Excellent)</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            
+            <!-- Final Assessment -->
+            <div class="border-t pt-6 mt-8">
+                <h2 class="text-xl font-semibold mb-4">Final Assessment</h2>
+                
+                <div class="grid grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">
+                            Overall Rating (0-10)
+                        </label>
+                        {{ form.overall_rating }}
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">
+                            Job Match Percentage
+                        </label>
+                        {{ form.job_match_percentage }}
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">
+                        Key Strengths
+                    </label>
+                    {{ form.key_strengths }}
+                </div>
+                
+                <div class="mt-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">
+                        Final Recommendation
+                    </label>
+                    {{ form.final_recommendation }}
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing star ratings');
+    
+    // Initialize star ratings
+    const starContainers = document.querySelectorAll('.star-rating');
+    console.log('Found star containers:', starContainers.length);
+    
+    starContainers.forEach((container, containerIndex) => {
+        console.log(`Initializing container ${containerIndex}`);
+        const stars = container.querySelectorAll('.star-btn');
+        console.log(`Found ${stars.length} stars in container ${containerIndex}`);
+        
+        const ratingInput = container.closest('.question-item').querySelector('.rating-input');
+        const currentRating = parseInt(container.dataset.rating) || 0;
+        console.log(`Current rating for container ${containerIndex}: ${currentRating}`);
+        
+        // Set initial state
+        updateStars(stars, currentRating);
+        
+        // Handle star clicks
+        stars.forEach((star, starIndex) => {
+            console.log(`Adding click listener to star ${starIndex} in container ${containerIndex}`);
+            star.addEventListener('click', function(e) {
+                console.log(`Star ${starIndex} clicked in container ${containerIndex}`);
+                e.preventDefault();
+                const value = parseInt(this.dataset.value);
+                console.log(`Star value: ${value}`);
+                updateStars(stars, value);
+                ratingInput.value = value;
+                
+                // Save response via AJAX
+                const questionId = container.closest('.question-item').dataset.questionId;
+                const responseText = container.closest('.question-item').querySelector('textarea').value;
+                console.log(`Saving response for question ${questionId}, rating: ${value}`);
+                saveResponse(questionId, responseText, value);
+            });
+        });
+    });
+    
+    // Handle competency scores
+    document.querySelectorAll('.competency-score').forEach(input => {
+        input.addEventListener('change', function() {
+            const competencyId = this.dataset.competencyId;
+            const score = this.value;
+            console.log(`Saving competency score: ${competencyId}, score: ${score}`);
+            saveCompetencyScore(competencyId, score);
+        });
+        
+        // Also save on blur (when user clicks away)
+        input.addEventListener('blur', function() {
+            const competencyId = this.dataset.competencyId;
+            const score = this.value;
+            if (score) {
+                console.log(`Saving competency score on blur: ${competencyId}, score: ${score}`);
+                saveCompetencyScore(competencyId, score);
+            }
+        });
+    });
+    
+    // Save progress
+    const saveButton = document.getElementById('saveAssessment');
+    if (saveButton) {
+        console.log('Save button found, adding listener');
+        saveButton.addEventListener('click', function() {
+            console.log('Save button clicked');
+            saveAllResponses();
+        });
+    } else {
+        console.error('Save button not found!');
+    }
+    
+    // Complete assessment
+    const completeButton = document.getElementById('completeAssessment');
+    if (completeButton) {
+        console.log('Complete button found, adding listener');
+        completeButton.addEventListener('click', function() {
+            console.log('Complete button clicked');
+            completeAssessment();
+        });
+    } else {
+        console.error('Complete button not found!');
+    }
+});
+
+function updateStars(stars, rating) {
+    console.log(`Updating stars with rating: ${rating}`);
+    const ratingValue = parseInt(rating) || 0;
+    stars.forEach((star, index) => {
+        const starValue = parseInt(star.dataset.value);
+        if (starValue <= ratingValue) {
+            star.classList.add('text-yellow-400');
+            star.classList.remove('text-gray-400');
+        } else {
+            star.classList.remove('text-yellow-400');
+            star.classList.add('text-gray-400');
+        }
+    });
+}
+
+async function saveResponse(questionId, responseText, rating) {
+    try {
+        // Show saving indicator
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toast-message');
+        toastMessage.textContent = 'Saving...';
+        toast.classList.remove('hidden');
+        toast.querySelector('div').classList.remove('bg-red-500');
+        toast.querySelector('div').classList.add('bg-blue-500');
+        
+        const response = await fetch('', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: new URLSearchParams({
+                'action': 'save_response',
+                'question_id': questionId,
+                'response_text': responseText,
+                'rating': rating
+            })
+        });
+        
+        if (!response.ok) throw new Error('Network response was not ok');
+        
+        const data = await response.json();
+        if (!data.success) throw new Error(data.error || 'Failed to save response');
+        
+        // Show success message
+        toastMessage.textContent = 'Saved successfully';
+        toast.querySelector('div').classList.remove('bg-blue-500');
+        toast.querySelector('div').classList.add('bg-green-500');
+        
+        // Hide toast after 2 seconds
+        setTimeout(() => {
+            toast.classList.add('hidden');
+        }, 2000);
+        
+    } catch (error) {
+        console.error('Error:', error);
+        
+        // Show error message
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toast-message');
+        toastMessage.textContent = 'Failed to save. Please try again.';
+        toast.classList.remove('hidden');
+        toast.querySelector('div').classList.remove('bg-blue-500', 'bg-green-500');
+        toast.querySelector('div').classList.add('bg-red-500');
+        
+        // Don't auto-hide error messages
+    }
+}
+
+async function saveCompetencyScore(competencyId, score) {
+    try {
+        // Validate score
+        if (!score || isNaN(parseInt(score))) {
+            console.error('Invalid score:', score);
+            throw new Error('Invalid score value');
+        }
+        
+        // Show saving indicator
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toast-message');
+        toastMessage.textContent = 'Saving competency score...';
+        toast.classList.remove('hidden');
+        toast.querySelector('div').classList.remove('bg-red-500');
+        toast.querySelector('div').classList.add('bg-blue-500');
+        
+        const response = await fetch('', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: new URLSearchParams({
+                'action': 'save_competency_score',
+                'competency_id': competencyId,
+                'score': score
+            })
+        });
+        
+        if (!response.ok) throw new Error('Network response was not ok');
+        
+        const data = await response.json();
+        if (!data.success) throw new Error(data.error || 'Failed to save score');
+        
+        // Show success message
+        toastMessage.textContent = 'Competency score saved';
+        toast.querySelector('div').classList.remove('bg-blue-500');
+        toast.querySelector('div').classList.add('bg-green-500');
+        
+        // Hide toast after 2 seconds
+        setTimeout(() => {
+            toast.classList.add('hidden');
+        }, 2000);
+        
+    } catch (error) {
+        console.error('Error:', error);
+        
+        // Show error message
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toast-message');
+        toastMessage.textContent = 'Failed to save competency score. Please try again.';
+        toast.classList.remove('hidden');
+        toast.querySelector('div').classList.remove('bg-blue-500', 'bg-green-500');
+        toast.querySelector('div').classList.add('bg-red-500');
+    }
+}
+
+function saveAllResponses() {
+    const promises = [];
+    
+    // Show saving indicator
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toast-message');
+    toastMessage.textContent = 'Saving all responses...';
+    toast.classList.remove('hidden');
+    toast.querySelector('div').classList.remove('bg-red-500', 'bg-green-500');
+    toast.querySelector('div').classList.add('bg-blue-500');
+    
+    // Save all question responses
+    document.querySelectorAll('.question-item').forEach(item => {
+        const questionId = item.dataset.questionId;
+        const responseText = item.querySelector('textarea').value;
+        const rating = item.querySelector('.rating-input').value;
+        
+        if (responseText || rating) {
+            promises.push(saveResponse(questionId, responseText, rating));
+        }
+    });
+    
+    // Save all competency scores
+    document.querySelectorAll('.competency-score').forEach(input => {
+        const competencyId = input.dataset.competencyId;
+        const score = input.value;
+        
+        if (score) {
+            promises.push(saveCompetencyScore(competencyId, score));
+        }
+    });
+    
+    Promise.all(promises)
+        .then(() => {
+            // Show success message
+            toastMessage.textContent = 'All responses saved successfully!';
+            toast.querySelector('div').classList.remove('bg-blue-500');
+            toast.querySelector('div').classList.add('bg-green-500');
+            
+            // Hide toast after 3 seconds
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3000);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            
+            // Show error message
+            toastMessage.textContent = 'Failed to save some responses. Please try again.';
+            toast.classList.remove('hidden');
+            toast.querySelector('div').classList.remove('bg-blue-500', 'bg-green-500');
+            toast.querySelector('div').classList.add('bg-red-500');
+        });
+}
+
+async function completeAssessment() {
+    const form = document.getElementById('assessmentForm');
+    const formData = new FormData(form);
+    formData.append('action', 'complete_assessment');
+    
+    // Show saving indicator
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toast-message');
+    toastMessage.textContent = 'Completing assessment...';
+    toast.classList.remove('hidden');
+    toast.querySelector('div').classList.remove('bg-red-500', 'bg-green-500');
+    toast.querySelector('div').classList.add('bg-blue-500');
+    
+    try {
+        const response = await fetch('', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData
+        });
+        
+        if (!response.ok) throw new Error('Network response was not ok');
+        
+        const data = await response.json();
+        if (data.success) {
+            // Show success message before redirecting
+            toastMessage.textContent = 'Assessment completed successfully!';
+            toast.querySelector('div').classList.remove('bg-blue-500');
+            toast.querySelector('div').classList.add('bg-green-500');
+            
+            // Redirect after a short delay
+            setTimeout(() => {
+                window.location.href = data.redirect_url;
+            }, 1000);
+        } else {
+            throw new Error(data.errors || 'Failed to complete assessment');
+        }
+        
+    } catch (error) {
+        console.error('Error:', error);
+        
+        // Show error message
+        toastMessage.textContent = 'Failed to complete assessment. Please ensure all required fields are filled.';
+        toast.classList.remove('hidden');
+        toast.querySelector('div').classList.remove('bg-blue-500', 'bg-green-500');
+        toast.querySelector('div').classList.add('bg-red-500');
+    }
+}
+</script>
+{% endblock %} 

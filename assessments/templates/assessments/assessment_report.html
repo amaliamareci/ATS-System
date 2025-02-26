@@ -1,0 +1,118 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h2 class="mb-0">Assessment Report</h2>
+        </div>
+        <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h4>Candidate: {{ process.candidate.full_name }}</h4>
+                    <p>Position: {{ process.position.title }}</p>
+                </div>
+                <div class="col-md-6 text-md-right">
+                    <p>Assessment Date: {{ assessment.completed_at|date:"F j, Y" }}</p>
+                    <p>Assessor: {{ assessment.assessor.get_full_name }}</p>
+                </div>
+            </div>
+
+            <div class="assessment-summary mb-4">
+                <h3>Assessment Summary</h3>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5>Overall Rating</h5>
+                                <div class="display-4 text-center">{{ assessment.overall_rating }}/5</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5>Job Match</h5>
+                                <div class="display-4 text-center">{{ assessment.job_match_percentage }}%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="competency-areas mb-4">
+                <h3>Competency Areas</h3>
+                {% for competency_area in competency_areas %}
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h4 class="mb-0">{{ competency_area.name }}</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row align-items-center mb-3">
+                            <div class="col">
+                                <h5>Competency Score</h5>
+                                <div class="h2">{{ competency_area.score }}/10</div>
+                            </div>
+                        </div>
+                        
+                        <h5>Questions & Responses</h5>
+                        {% for question, response in competency_area.questions.items %}
+                        <div class="question-response mb-3">
+                            <p class="font-weight-bold mb-1">{{ question.text }}</p>
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <p class="mb-1">Response: {{ response.response_text }}</p>
+                                </div>
+                                <div class="col-md-4">
+                                    <p class="mb-0">Rating: {{ response.rating }}/5</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="final-assessment mb-4">
+                <h3>Final Assessment</h3>
+                <div class="card">
+                    <div class="card-body">
+                        <h5>Key Strengths</h5>
+                        <ul class="list-unstyled">
+                            {% for strength in assessment.key_strengths %}
+                            <li><i class="fas fa-check-circle text-success mr-2"></i>{{ strength }}</li>
+                            {% endfor %}
+                        </ul>
+
+                        <h5>Final Recommendation</h5>
+                        <div class="p-3 bg-light rounded">
+                            {{ assessment.final_recommendation|linebreaks }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-right">
+                <a href="{% url 'candidate_recruiting_process' process.position.id process.candidate.id %}" class="btn btn-secondary">
+                    Back to Candidate Process
+                </a>
+                <button onclick="window.print()" class="btn btn-primary ml-2">
+                    <i class="fas fa-print mr-1"></i> Print Report
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_css %}
+<style>
+    @media print {
+        .btn { display: none; }
+        .card { border: none; }
+        .card-header { background-color: #f8f9fa !important; color: #000 !important; }
+    }
+</style>
+{% endblock %}
+{% endblock %} 
