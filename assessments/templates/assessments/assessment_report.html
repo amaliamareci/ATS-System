@@ -1,118 +1,305 @@
 {% extends 'core/base.html' %}
 {% load static %}
+{% load assessment_extras %}
 
-{% block content %}
-<div class="container mt-4">
-    <div class="card">
-        <div class="card-header bg-primary text-white">
-            <h2 class="mb-0">Assessment Report</h2>
-        </div>
-        <div class="card-body">
-            <div class="row mb-4">
-                <div class="col-md-6">
-                    <h4>Candidate: {{ process.candidate.full_name }}</h4>
-                    <p>Position: {{ process.position.title }}</p>
-                </div>
-                <div class="col-md-6 text-md-right">
-                    <p>Assessment Date: {{ assessment.completed_at|date:"F j, Y" }}</p>
-                    <p>Assessor: {{ assessment.assessor.get_full_name }}</p>
-                </div>
-            </div>
+{% block header %}Assessment Report: {{ candidate.first_name }} {{ candidate.last_name }}{% endblock %}
 
-            <div class="assessment-summary mb-4">
-                <h3>Assessment Summary</h3>
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="card">
-                            <div class="card-body">
-                                <h5>Overall Rating</h5>
-                                <div class="display-4 text-center">{{ assessment.overall_rating }}/5</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="card">
-                            <div class="card-body">
-                                <h5>Job Match</h5>
-                                <div class="display-4 text-center">{{ assessment.job_match_percentage }}%</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="competency-areas mb-4">
-                <h3>Competency Areas</h3>
-                {% for competency_area in competency_areas %}
-                <div class="card mb-3">
-                    <div class="card-header">
-                        <h4 class="mb-0">{{ competency_area.name }}</h4>
-                    </div>
-                    <div class="card-body">
-                        <div class="row align-items-center mb-3">
-                            <div class="col">
-                                <h5>Competency Score</h5>
-                                <div class="h2">{{ competency_area.score }}/10</div>
-                            </div>
-                        </div>
-                        
-                        <h5>Questions & Responses</h5>
-                        {% for question, response in competency_area.questions.items %}
-                        <div class="question-response mb-3">
-                            <p class="font-weight-bold mb-1">{{ question.text }}</p>
-                            <div class="row">
-                                <div class="col-md-8">
-                                    <p class="mb-1">Response: {{ response.response_text }}</p>
-                                </div>
-                                <div class="col-md-4">
-                                    <p class="mb-0">Rating: {{ response.rating }}/5</p>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-
-            <div class="final-assessment mb-4">
-                <h3>Final Assessment</h3>
-                <div class="card">
-                    <div class="card-body">
-                        <h5>Key Strengths</h5>
-                        <ul class="list-unstyled">
-                            {% for strength in assessment.key_strengths %}
-                            <li><i class="fas fa-check-circle text-success mr-2"></i>{{ strength }}</li>
-                            {% endfor %}
-                        </ul>
-
-                        <h5>Final Recommendation</h5>
-                        <div class="p-3 bg-light rounded">
-                            {{ assessment.final_recommendation|linebreaks }}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="text-right">
-                <a href="{% url 'candidate_recruiting_process' process.position.id process.candidate.id %}" class="btn btn-secondary">
-                    Back to Candidate Process
-                </a>
-                <button onclick="window.print()" class="btn btn-primary ml-2">
-                    <i class="fas fa-print mr-1"></i> Print Report
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-{% block extra_css %}
+{% block extra_head %}
 <style>
+    .star-rating {
+        display: inline-flex;
+        align-items: center;
+    }
+    
+    .star-rating i {
+        font-size: 20px;
+        margin-right: 4px;
+    }
+    
+    .star-filled {
+        color: #FFD700 !important; /* Bright gold/yellow */
+    }
+    
+    .star-empty {
+        color: #E5E7EB !important;
+    }
+    
+    .score-bar {
+        height: 6px;
+        background-color: #E5E7EB;
+        border-radius: 3px;
+        overflow: hidden;
+        margin-top: 4px;
+    }
+    
+    .score-fill {
+        height: 100%;
+        background-color: #10B981;
+        border-radius: 3px;
+    }
+    
+    .question-card {
+        border-left: 3px solid #3B82F6;
+    }
+    
     @media print {
-        .btn { display: none; }
-        .card { border: none; }
-        .card-header { background-color: #f8f9fa !important; color: #000 !important; }
+        .no-print {
+            display: none !important;
+        }
+        
+        body {
+            padding: 0;
+            margin: 0;
+        }
+        
+        .container {
+            max-width: 100% !important;
+            width: 100% !important;
+        }
     }
 </style>
 {% endblock %}
+
+{% block content %}
+<div class="bg-gray-50 min-h-screen py-6 px-4">
+    <div class="mb-6 no-print">
+        <a href="{% url 'candidate_recruiting_process' position.id candidate.id %}" class="inline-flex items-center text-gray-600 hover:text-gray-900">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to Candidate Profile
+        </a>
+    </div>
+    
+    <div class="container mx-auto max-w-4xl">
+        <!-- Header Banner -->
+        <div class="bg-white rounded-lg shadow-sm overflow-hidden mb-5">
+            <div class="bg-blue-600 text-white p-5">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h1 class="text-xl font-bold">Assessment Report</h1>
+                        <p class="text-base mt-1 opacity-90">{{ candidate.first_name }} {{ candidate.last_name }}</p>
+                        <p class="text-sm opacity-80">{{ position.title }} at {{ position.client.name }}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-xs opacity-80">Report Date</p>
+                        <p class="text-sm">{% if assessment %}{{ assessment.updated_at|date:"F d, Y" }}{% else %}Not available{% endif %}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Candidate Info Section -->
+            <div class="p-5 border-b border-gray-200">
+                <div class="flex items-start space-x-4">
+                    <div class="w-14 h-14 rounded-full bg-blue-100 flex-shrink-0 flex items-center justify-center text-blue-600 text-lg font-medium">
+                        {{ candidate.first_name.0 }}{{ candidate.last_name.0 }}
+                    </div>
+                    
+                    <div class="flex-1">
+                        <h2 class="text-base font-semibold text-gray-900 mb-3">{{ candidate.first_name }} {{ candidate.last_name }}</h2>
+                        <div class="grid grid-cols-3 gap-4 text-sm">
+                            <div class="mb-2">
+                                <p class="text-xs text-gray-500 mb-1">Email</p>
+                                <p class="text-gray-800">{{ candidate.email }}</p>
+                            </div>
+                            <div class="mb-2">
+                                <p class="text-xs text-gray-500 mb-1">Phone</p>
+                                <p class="text-gray-800">{{ candidate.phone }}</p>
+                            </div>
+                            <div class="mb-2">
+                                <p class="text-xs text-gray-500 mb-1">Source</p>
+                                <p class="text-gray-800">{{ candidate.source }}</p>
+                            </div>
+                            <div class="mb-2">
+                                <p class="text-xs text-gray-500 mb-1">Position</p>
+                                <p class="text-gray-800">{{ position.title }}</p>
+                            </div>
+                            <div class="mb-2">
+                                <p class="text-xs text-gray-500 mb-1">Client</p>
+                                <p class="text-gray-800">{{ position.client.name }}</p>
+                            </div>
+                            <div class="mb-2">
+                                <p class="text-xs text-gray-500 mb-1">Location</p>
+                                <p class="text-gray-800">{{ position.location|default:"Not specified" }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {% if assessment and assessment.is_completed %}
+        
+        <!-- Recruiter's Notes Section -->
+        {% if assessment.final_recommendation %}
+        <div class="bg-white rounded-lg shadow-sm mb-5">
+            <div class="px-5 py-3 border-b border-gray-200">
+                <h3 class="text-sm font-semibold text-gray-800">Final Recommendation</h3>
+            </div>
+            <div class="p-5">
+                <div class="bg-gray-50 p-4 rounded-md border border-gray-200">
+                    <p class="text-gray-700 whitespace-pre-line text-sm">{{ assessment.final_recommendation }}</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Overall Assessment Score Section -->
+        <div class="bg-white rounded-lg shadow-sm mb-5">
+            <div class="px-5 py-3 border-b border-gray-200">
+                <h3 class="text-sm font-semibold text-gray-800">Assessment Summary</h3>
+            </div>
+            <div class="p-5">
+                <div class="flex items-center justify-between mb-5">
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-800">Overall Assessment Score</h3>
+                        <p class="text-xs text-gray-500 mt-1">Based on evaluation across all competency areas</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-16 h-16 rounded-full bg-blue-50 border-2 border-blue-500 flex flex-col items-center justify-center">
+                            <span class="text-xl font-bold text-blue-600">{{ assessment.overall_rating }}</span>
+                            <span class="text-xs text-gray-500">/10</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {% for score in competency_scores %}
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <h4 class="text-xs font-medium text-gray-800">{{ score.competency_area.name }}</h4>
+                            <span class="text-xs font-medium text-gray-800">{{ score.score }}/10</span>
+                        </div>
+                        <div class="score-bar">
+                            <div class="score-fill" style="width:{% widthratio score.score 10 100 %}%"></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Technical Interview Section -->
+        {% if technical_interview %}
+        <div class="bg-white rounded-lg shadow-sm mb-5">
+            <div class="px-5 py-3 border-b border-gray-200">
+                <h3 class="text-sm font-semibold text-gray-800">Technical Interview</h3>
+            </div>
+            <div class="p-5">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm font-medium">
+                            {{ technical_interview.recruiter.first_name.0 }}{{ technical_interview.recruiter.last_name.0 }}
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-gray-800">{{ technical_interview.recruiter.first_name }} {{ technical_interview.recruiter.last_name }}</h3>
+                            <p class="text-xs text-gray-500">{{ technical_interview.recruiter.get_role_display }}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-xs text-gray-500">Interview Date</p>
+                        <p class="text-sm font-medium text-gray-800">{{ technical_interview.date_time|date:"F d, Y • g:i A" }}</p>
+                    </div>
+                </div>
+                
+                {% if technical_interview.notes %}
+                <div class="mt-3">
+                    <h4 class="text-xs font-medium text-gray-700 mb-1">Interview Notes</h4>
+                    <div class="bg-gray-50 p-3 rounded-md border border-gray-200">
+                        <p class="text-sm text-gray-700 whitespace-pre-line">{{ technical_interview.notes }}</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Detailed Assessment Section -->
+        <div class="bg-white rounded-lg shadow-sm mb-5">
+            <div class="px-5 py-3 border-b border-gray-200">
+                <h3 class="text-sm font-semibold text-gray-800">Detailed Assessment</h3>
+            </div>
+            <div class="p-5">
+                <div class="space-y-6">
+                    {% for score in competency_scores %}
+                    <div class="bg-gray-50 rounded-md p-4">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-sm font-semibold text-gray-800">{{ score.competency_area.name }}</h3>
+                            <div class="flex items-center">
+                                <span class="text-xs font-medium text-gray-800 mr-2">{{ score.score }}/10</span>
+                                <div class="star-rating">
+                                    {% for i in "12345"|make_list %}
+                                        {% if forloop.counter <= score.score|divide:2|floatformat:"0" %}
+                                        <i class="fas fa-star" style="color: #FFD700; font-size: 20px; margin-right: 4px;"></i>
+                                        {% else %}
+                                        <i class="far fa-star" style="color: #E5E7EB; font-size: 20px; margin-right: 4px;"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            {% for question in score.competency_area.questions.all %}
+                            <div class="question-card bg-white rounded-md border border-gray-200 p-4 pl-5">
+                                <h4 class="text-sm font-medium text-gray-800 mb-3">{{ question.question_text }}</h4>
+                                
+                                {% with response=assessment|get_response_for_question:question %}
+                                {% if response %}
+                                <div class="flex items-center mb-3">
+                                    <div class="star-rating">
+                                        {% for i in "12345"|make_list %}
+                                            {% if forloop.counter <= response.rating %}
+                                            <i class="fas fa-star" style="color: #FFD700; font-size: 20px; margin-right: 4px;"></i>
+                                            {% else %}
+                                            <i class="far fa-star" style="color: #E5E7EB; font-size: 20px; margin-right: 4px;"></i>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                    <span class="ml-2 text-xs text-gray-600">{{ response.rating }}/5</span>
+                                </div>
+                                
+                                {% if response.response_text %}
+                                <div class="bg-gray-50 p-3 rounded-md border border-gray-200">
+                                    <p class="text-xs text-gray-600 font-medium mb-1">Interviewer Notes:</p>
+                                    <p class="text-sm text-gray-700">{{ response.response_text }}</p>
+                                </div>
+                                {% endif %}
+                                {% else %}
+                                <p class="text-xs text-gray-500 italic">No response recorded</p>
+                                {% endif %}
+                                {% endwith %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="bg-white rounded-lg shadow-sm mb-5">
+            <div class="p-5 text-center">
+                <div class="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+                    <svg class="w-8 h-8 text-yellow-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <h3 class="text-sm font-medium text-yellow-800 mb-1">Assessment Not Completed</h3>
+                    <p class="text-xs text-yellow-700 mb-3">This candidate's assessment has not been completed yet.</p>
+                    <a href="{% url 'assessments:assessment_detail' process.id %}" class="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-xs font-medium text-white bg-blue-600 hover:bg-blue-700">
+                        Go to Assessment
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Print Button -->
+    <button onclick="window.print()" class="no-print fixed bottom-6 right-6 bg-blue-600 text-white rounded-full p-3 shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+        </svg>
+    </button>
+</div>
 {% endblock %} 
